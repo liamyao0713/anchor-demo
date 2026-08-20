@@ -14,7 +14,11 @@ assert.match(html, /live-chat\.js/, "index.html must load live-chat.js");
 assert.match(html, /id="anchor-live-chat"/, "live chat panel must exist");
 assert.match(html, /id="live-question"/, "question textarea must exist");
 assert.match(html, /id="live-send"/, "Send button must exist");
+assert.match(html, /data-live-state="idle"/, "live chat must start with idle state");
+assert.match(html, /id="live-corrected-meta"/, "Corrected Answer area must show summary metadata");
+assert.match(html, /id="live-corrected-citations"/, "Corrected Answer area must show citations");
 assert.match(html, /Uncorrected AI Answer/, "Raw Answer area must be explicitly uncorrected");
+assert.match(html, /Not Anchor-verified/, "Raw Answer must be visibly marked not Anchor-verified");
 assert.match(html, /Anchor Corrected Answer/, "Corrected Answer area must remain separate");
 assert.match(html, /Audit \/ Difference \/ Citations/, "Audit area must remain separate");
 
@@ -23,6 +27,13 @@ assert.match(js, /method:\s*"POST"/, "frontend must POST to chat API");
 assert.match(js, /raw_answer/, "frontend must map raw_answer");
 assert.match(js, /corrected_answer/, "frontend must map corrected_answer");
 assert.match(js, /grounded_by_anchor: false/, "Raw Answer must be shown as not grounded by Anchor");
+assert.match(js, /Not Anchor-verified/, "Raw Answer runtime metadata must include not Anchor-verified");
+assert.match(js, /Anchor is generating and calibrating the response/, "loading copy must be generic and non-streaming");
+assert.match(js, /submitting/, "frontend must model submitting state");
+assert.match(js, /processing/, "frontend must model processing state");
+assert.match(js, /completed/, "frontend must model completed state");
+assert.match(js, /failed/, "frontend must model failed state");
+assert.match(js, /corrected claims/, "Corrected Answer area must expose corrected claim count");
 assert.doesNotMatch(js, /innerHTML\s*=/, "API/model output must not be rendered through innerHTML assignment");
 
 const publicBundle = `${html}\n${css}\n${js}`;
@@ -35,6 +46,25 @@ assert.equal(liveChat.normalizeApiBase("http://127.0.0.1:8000/"), "http://127.0.
 assert.equal(liveChat.buildApiUrl("http://127.0.0.1:8000/", "/api/chat"), "http://127.0.0.1:8000/api/chat");
 assert.equal(liveChat.statusMeta("sufficient"), "sufficient");
 assert.equal(liveChat.statusMeta("verified"), "unavailable");
+assert.equal(liveChat.liveStateMeta("idle"), "idle");
+assert.equal(liveChat.liveStateMeta("submitting"), "submitting");
+assert.equal(liveChat.liveStateMeta("processing"), "processing");
+assert.equal(liveChat.liveStateMeta("completed"), "completed");
+assert.equal(liveChat.liveStateMeta("failed"), "failed");
+assert.equal(liveChat.liveStateMeta("unknown"), "failed");
+assert.equal(
+  liveChat.correctedFallbackText("insufficient"),
+  "Anchor 当前知识库中没有足够证据完成可靠核验/矫正。",
+);
+assert.equal(liveChat.correctedFallbackText("unavailable"), "Anchor calibration is currently unavailable.");
+assert.equal(
+  liveChat.correctedClaimCount([
+    { original_claim: "A", corrected_claim: "A", verification_status: "supported" },
+    { original_claim: "B", corrected_claim: "B with weaker wording", verification_status: "partially_supported" },
+    { original_claim: "C", corrected_claim: null, verification_status: "unsupported" },
+  ]),
+  2,
+);
 assert.deepEqual(
   liveChat.evidenceIdsFrom({
     evidence_ids: ["EV_1"],

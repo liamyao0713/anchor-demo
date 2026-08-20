@@ -14,6 +14,15 @@
     idle: "idle",
   };
 
+  const LIVE_STATES = new Set(["idle", "submitting", "processing", "completed", "failed"]);
+  const LIVE_STATE_LABELS = {
+    idle: "Idle",
+    submitting: "Submitting question...",
+    processing: "Anchor is generating and calibrating the response...",
+    completed: "Completed",
+    failed: "Failed",
+  };
+
   function normalizeApiBase(value) {
     const raw = String(value || "").trim();
     return (raw || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
@@ -33,9 +42,18 @@
     return STATUS_META[normalized] || STATUS_META.unavailable;
   }
 
+  function liveStateMeta(state) {
+    const normalized = String(state || "idle").toLowerCase();
+    return LIVE_STATES.has(normalized) ? normalized : "failed";
+  }
+
   function valueOrDash(value) {
     if (value === null || value === undefined || value === "") return "-";
     return String(value);
+  }
+
+  function normalizeText(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
   }
 
   function evidenceIdsFrom(item) {
@@ -49,6 +67,33 @@
       if (Array.isArray(item && item[key])) ids.push(...item[key]);
     });
     return Array.from(new Set(ids.map(String).filter(Boolean)));
+  }
+
+  function correctedClaimCount(corrections) {
+    if (!Array.isArray(corrections)) return 0;
+    return corrections.filter((correction) => {
+      const status = String(correction && correction.verification_status || "");
+      const original = normalizeText(correction && correction.original_claim);
+      const corrected = normalizeText(correction && correction.corrected_claim);
+      return status !== "supported" || (corrected && corrected !== original);
+    }).length;
+  }
+
+  function correctedFallbackText(status) {
+    const normalized = statusMeta(status);
+    if (normalized === "unavailable") {
+      return "Anchor calibration is currently unavailable.";
+    }
+    if (normalized === "insufficient") {
+      return "Anchor 当前知识库中没有足够证据完成可靠核验/矫正。";
+    }
+    if (normalized === "conflicting") {
+      return "Anchor found conflicting evidence and cannot present a single verified correction.";
+    }
+    if (normalized === "partial") {
+      return "Anchor current knowledge base only partially supports reliable verification or correction.";
+    }
+    return "Anchor corrected answer is unavailable.";
   }
 
   function safeHttpUrl(value) {
@@ -68,8 +113,11 @@
     normalizeApiBase,
     buildApiUrl,
     statusMeta,
+    liveStateMeta,
     valueOrDash,
     evidenceIdsFrom,
+    correctedClaimCount,
+    correctedFallbackText,
   };
 
   if (typeof module !== "undefined" && module.exports) {
@@ -96,11 +144,18 @@
     const rawMeta = document.getElementById("live-raw-meta");
     const correctedText = document.getElementById("live-corrected-text");
     const correctedStatus = document.getElementById("live-corrected-status");
+    const correctedMeta = document.getElementById("live-corrected-meta");
+    const correctedCitations = document.getElementById("live-corrected-citations");
     const auditContainer = document.getElementById("live-audit-content");
 
-    if (!form || !questionInput || !sendButton || !statusEl || !errorEl) return;
+    if (
+      !form || !questionInput || !sendButton || !statusEl || !errorEl ||
+      !apiInput || !rawText || !rawMeta || !correctedText || !correctedStatus ||
+      !correctedMeta || !correctedCitations || !auditContainer
+    ) return;
 
     apiInput.value = initialApiBase();
+    setLiveState(root, statusEl, "idle");
 
     apiInput.addEventListener("change", () => {
       const normalized = normalizeApiBase(apiInput.value);
@@ -112,19 +167,30 @@
       event.preventDefault();
       const question = questionInput.value.trim();
       if (!question) {
+        setLiveState(root, statusEl, "failed");
         showError(errorEl, "Question must not be empty.");
         return;
       }
 
       clearError(errorEl);
-      setBusy(sendButton, statusEl, true);
-      renderPending(rawText, rawMeta, correctedText, correctedStatus, auditContainer);
+      setLiveState(root, statusEl, "submitting");
+      setBusy(sendButton, true);
+      renderPending(
+        rawText,
+        rawMeta,
+        correctedText,
+        correctedStatus,
+        correctedMeta,
+        correctedCitations,
+        auditContainer,
+      );
 
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
       try {
         const endpoint = buildApiUrl(apiInput.value, "/api/chat");
+        setLiveState(root, statusEl, "processing");
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -145,19 +211,21 @@
           rawMeta,
           correctedText,
           correctedStatus,
+          correctedMeta,
+          correctedCitations,
           auditContainer,
         });
-        statusEl.textContent = "Done";
+        setLiveState(root, statusEl, "completed");
       } catch (error) {
         const message = error.name === "AbortError"
           ? "Anchor API request timed out."
           : error.message || "Anchor API request failed.";
         showError(errorEl, message);
-        renderUnavailable(correctedText, correctedStatus);
-        statusEl.textContent = "Failed";
+        renderUnavailable(correctedText, correctedStatus, correctedMeta, correctedCitations);
+        setLiveState(root, statusEl, "failed");
       } finally {
         window.clearTimeout(timeout);
-        setBusy(sendButton, statusEl, false);
+        setBusy(sendButton, false);
       }
     });
   }
@@ -185,19 +253,35 @@
     }
   }
 
-  function setBusy(button, statusEl, busy) {
-    button.disabled = busy;
-    button.setAttribute("aria-busy", busy ? "true" : "false");
-    if (busy) statusEl.textContent = "Contacting Anchor API...";
+  function setLiveState(root, statusEl, state) {
+    const normalized = liveStateMeta(state);
+    root.dataset.liveState = normalized;
+    statusEl.textContent = LIVE_STATE_LABELS[normalized];
   }
 
-  function renderPending(rawText, rawMeta, correctedText, correctedStatus, auditContainer) {
+  function setBusy(button, busy) {
+    button.disabled = busy;
+    button.setAttribute("aria-busy", busy ? "true" : "false");
+  }
+
+  function renderPending(
+    rawText,
+    rawMeta,
+    correctedText,
+    correctedStatus,
+    correctedMeta,
+    correctedCitations,
+    auditContainer,
+  ) {
     replaceChildren(rawMeta);
+    appendPill(rawMeta, "Not Anchor-verified");
     appendPill(rawMeta, "grounded_by_anchor: false");
     appendPill(rawMeta, "verification_status: uncorrected");
     setText(rawText, "Waiting for Base LLM raw answer...");
     renderStatus(correctedStatus, "idle");
+    renderCorrectedSummary(correctedMeta, { citations: [], corrections: [] }, "idle");
     setText(correctedText, "Waiting for Anchor calibration...");
+    renderCorrectedCitations(correctedCitations, []);
     replaceChildren(auditContainer);
     appendEmpty(auditContainer, "Audit will appear after the API response.");
   }
@@ -211,12 +295,20 @@
     }
 
     renderRawAnswer(raw, targets.rawText, targets.rawMeta);
-    renderCorrectedAnswer(corrected, targets.correctedText, targets.correctedStatus);
+    renderCorrectedAnswer(
+      corrected,
+      payload,
+      targets.correctedText,
+      targets.correctedStatus,
+      targets.correctedMeta,
+      targets.correctedCitations,
+    );
     renderAudit(payload, targets.auditContainer);
   }
 
   function renderRawAnswer(raw, rawText, rawMeta) {
     replaceChildren(rawMeta);
+    appendPill(rawMeta, "Not Anchor-verified");
     appendPill(rawMeta, `provider: ${valueOrDash(raw.provider)}`);
     appendPill(rawMeta, `model: ${valueOrDash(raw.model)}`);
     appendPill(rawMeta, `grounded_by_anchor: ${raw.grounded_by_anchor === false ? "false" : "unexpected"}`);
@@ -224,18 +316,26 @@
     setText(rawText, valueOrDash(raw.text));
   }
 
-  function renderCorrectedAnswer(corrected, correctedText, correctedStatus) {
+  function renderCorrectedAnswer(
+    corrected,
+    payload,
+    correctedText,
+    correctedStatus,
+    correctedMeta,
+    correctedCitations,
+  ) {
     const status = statusMeta(corrected.evidence_status);
     renderStatus(correctedStatus, status);
-    const fallback = status === "unavailable"
-      ? "Anchor calibration is currently unavailable."
-      : "Anchor current knowledge base does not have enough evidence for reliable verification or correction.";
-    setText(correctedText, corrected.text || fallback);
+    renderCorrectedSummary(correctedMeta, payload, status);
+    setText(correctedText, corrected.text || correctedFallbackText(status));
+    renderCorrectedCitations(correctedCitations, payload.citations || []);
   }
 
-  function renderUnavailable(correctedText, correctedStatus) {
+  function renderUnavailable(correctedText, correctedStatus, correctedMeta, correctedCitations) {
     renderStatus(correctedStatus, "unavailable");
-    setText(correctedText, "Anchor calibration is currently unavailable.");
+    renderCorrectedSummary(correctedMeta, { citations: [], corrections: [] }, "unavailable");
+    setText(correctedText, correctedFallbackText("unavailable"));
+    renderCorrectedCitations(correctedCitations, []);
   }
 
   function renderStatus(container, status) {
@@ -245,6 +345,30 @@
     chip.className = `live-status-chip status-${safeStatus}`;
     chip.textContent = `evidence_status: ${safeStatus}`;
     container.appendChild(chip);
+  }
+
+  function renderCorrectedSummary(container, payload, status) {
+    replaceChildren(container);
+    const citations = Array.isArray(payload && payload.citations) ? payload.citations : [];
+    const corrections = Array.isArray(payload && payload.corrections) ? payload.corrections : [];
+    appendPill(container, `calibration: ${statusMeta(status)}`);
+    appendPill(container, `citations: ${citations.length}`);
+    appendPill(container, `corrected claims: ${correctedClaimCount(corrections)}`);
+  }
+
+  function renderCorrectedCitations(container, citations) {
+    replaceChildren(container);
+    const title = document.createElement("h4");
+    title.className = "live-audit-title";
+    title.textContent = "Citations";
+    container.appendChild(title);
+    if (!citations.length) {
+      appendEmpty(container, "No Anchor citations returned.");
+      return;
+    }
+    citations.forEach((citation) => {
+      container.appendChild(makeCitationItem(citation));
+    });
   }
 
   function renderAudit(payload, container) {
@@ -310,36 +434,40 @@
       return;
     }
     citations.forEach((citation) => {
-      const item = document.createElement("div");
-      item.className = "live-item";
-      const title = document.createElement("p");
-      title.className = "live-item-title";
-      title.textContent = `${valueOrDash(citation.citation_id)} -> evidence_id: ${valueOrDash(citation.evidence_id)}`;
-      item.appendChild(title);
-
-      const body = document.createElement("p");
-      body.className = "live-item-text";
-      body.textContent = [
-        citation.title,
-        citation.source,
-        citation.pmid ? `PMID ${citation.pmid}` : "",
-        citation.doi ? `DOI ${citation.doi}` : "",
-      ].filter(Boolean).join(" | ") || "Citation metadata unavailable.";
-      item.appendChild(body);
-
-      const url = safeHttpUrl(citation.url);
-      if (url) {
-        const link = document.createElement("a");
-        link.className = "live-citation-link";
-        link.href = url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = "Open source";
-        item.appendChild(link);
-      }
-      section.appendChild(item);
+      section.appendChild(makeCitationItem(citation));
     });
     container.appendChild(section);
+  }
+
+  function makeCitationItem(citation) {
+    const item = document.createElement("div");
+    item.className = "live-item live-citation-item";
+    const title = document.createElement("p");
+    title.className = "live-item-title";
+    title.textContent = `${valueOrDash(citation.citation_id)} -> evidence_id: ${valueOrDash(citation.evidence_id)}`;
+    item.appendChild(title);
+
+    const body = document.createElement("p");
+    body.className = "live-item-text";
+    body.textContent = [
+      citation.title,
+      citation.source,
+      citation.pmid ? `PMID ${citation.pmid}` : "",
+      citation.doi ? `DOI ${citation.doi}` : "",
+    ].filter(Boolean).join(" | ") || "Citation metadata unavailable.";
+    item.appendChild(body);
+
+    const url = safeHttpUrl(citation.url);
+    if (url) {
+      const link = document.createElement("a");
+      link.className = "live-citation-link";
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Open source";
+      item.appendChild(link);
+    }
+    return item;
   }
 
   function makeSection(titleText) {
@@ -370,11 +498,13 @@
   }
 
   function claimBody(claim) {
-    const ids = evidenceIdsFrom(claim);
     return [
-      claim.text,
+      claim.text ? `Claim: ${claim.text}` : "",
+      claim.verification_status ? `Status: ${claim.verification_status}` : "",
       claim.type ? `type: ${claim.type}` : "",
-      ids.length ? `evidence: ${ids.join(", ")}` : "",
+      evidenceLine("Supporting evidence", claim && claim.supporting_evidence_ids),
+      evidenceLine("Conflicting evidence", claim && claim.conflicting_evidence_ids),
+      evidenceLine("Referenced evidence", claim && claim.evidence_ids),
     ].filter(Boolean).join("\n");
   }
 
@@ -383,13 +513,20 @@
   }
 
   function correctionBody(correction) {
-    const ids = evidenceIdsFrom(correction);
     return [
       correction.original_claim ? `Original: ${correction.original_claim}` : "",
       correction.corrected_claim ? `Corrected: ${correction.corrected_claim}` : "",
+      correction.verification_status ? `Status: ${correction.verification_status}` : "",
       correction.correction_reason ? `Reason: ${correction.correction_reason}` : "",
-      ids.length ? `Evidence/Citations: ${ids.join(", ")}` : "",
+      evidenceLine("Supporting evidence", correction && correction.supporting_evidence_ids),
+      evidenceLine("Conflicting evidence", correction && correction.conflicting_evidence_ids),
+      evidenceLine("Citation IDs", correction && correction.citation_ids),
     ].filter(Boolean).join("\n") || "Correction metadata unavailable.";
+  }
+
+  function evidenceLine(label, ids) {
+    if (!Array.isArray(ids) || !ids.length) return "";
+    return `${label}: ${ids.map(String).filter(Boolean).join(", ")}`;
   }
 
   function appendPill(container, text) {
