@@ -23,6 +23,93 @@
     failed: "Failed",
   };
 
+  const ERROR_DEFINITIONS = {
+    INVALID_REQUEST: {
+      message: "The question could not be processed. Please edit it and try again.",
+      rawText: "Raw Answer was not generated because the request was invalid.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    VALIDATION_ERROR: {
+      message: "The request did not match the API format. Please edit the question and retry.",
+      rawText: "Raw Answer was not generated because the request format was rejected.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    RATE_LIMITED: {
+      message: "Too many requests. Please wait and retry.",
+      rawText: "Raw Answer was not generated because this request was rate-limited.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    LLM_UNAVAILABLE: {
+      message: "Base LLM is unavailable. Raw Answer could not be generated.",
+      rawText: "Raw Answer generation failed because the Base LLM is unavailable.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    LLM_TIMEOUT: {
+      message: "Base LLM timed out. Raw Answer could not be generated.",
+      rawText: "Raw Answer generation timed out before an uncorrected answer was returned.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    DATABASE_UNAVAILABLE: {
+      message: "Anchor calibration data is temporarily unavailable.",
+      rawText: "Raw Answer was not returned in a structured response.",
+      correctedText: "Anchor calibration unavailable / failed.",
+      retryable: true,
+    },
+    RETRIEVAL_UNAVAILABLE: {
+      message: "Anchor evidence retrieval is temporarily unavailable.",
+      rawText: "Raw Answer was not returned in a structured response.",
+      correctedText: "Anchor calibration unavailable / failed.",
+      retryable: true,
+    },
+    SERVER_ERROR: {
+      message: "Anchor API returned a server error. Please retry.",
+      rawText: "Raw Answer is unavailable because Anchor API returned an error.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    UPSTREAM_UNAVAILABLE: {
+      message: "Anchor API dependency is temporarily unavailable. Please retry.",
+      rawText: "Raw Answer is unavailable because an upstream service did not respond.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    REQUEST_TIMEOUT: {
+      message: "Anchor API request timed out. Please retry.",
+      rawText: "Raw Answer is unavailable because the request timed out.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    NETWORK_ERROR: {
+      message: "Network error. Check the connection and retry.",
+      rawText: "Raw Answer is unavailable because the network request failed.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    API_OFFLINE: {
+      message: "Anchor API is offline or unreachable. Check the API setting and retry.",
+      rawText: "Raw Answer is unavailable because Anchor API could not be reached.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    INVALID_API_BASE_URL: {
+      message: "API URL is invalid. Check the API setting and retry.",
+      rawText: "Raw Answer is unavailable because the API URL is invalid.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+    INTERNAL_ERROR: {
+      message: "Anchor API returned an internal error. Please retry.",
+      rawText: "Raw Answer is unavailable because Anchor API returned an internal error.",
+      correctedText: "Anchor correction was not run because Raw Answer was unavailable.",
+      retryable: true,
+    },
+  };
+
   function normalizeApiBase(value) {
     const raw = String(value || "").trim();
     return (raw || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
@@ -30,9 +117,14 @@
 
   function buildApiUrl(baseUrl, path) {
     const base = normalizeApiBase(baseUrl);
-    const parsed = new URL(base);
+    let parsed;
+    try {
+      parsed = new URL(base);
+    } catch (_error) {
+      throw new InvalidApiBaseUrlError();
+    }
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      throw new Error("API_BASE_URL must use http or https.");
+      throw new InvalidApiBaseUrlError();
     }
     return `${parsed.toString().replace(/\/+$/, "")}${path}`;
   }
@@ -109,6 +201,63 @@
     return null;
   }
 
+  function hasDualAnswerPayload(payload) {
+    return Boolean(payload && payload.raw_answer && payload.corrected_answer);
+  }
+
+  function errorInfoFromHttp(status, payload) {
+    const apiError = payload && payload.error ? payload.error : {};
+    const code = normalizedErrorCode(apiError.code, status);
+    return buildErrorInfo(code, status, apiError.query_id);
+  }
+
+  function errorInfoFromException(error) {
+    if (error && error.name === "AbortError") {
+      return buildErrorInfo("REQUEST_TIMEOUT", null, null);
+    }
+    if (error && error.name === "InvalidApiBaseUrlError") {
+      return buildErrorInfo("INVALID_API_BASE_URL", null, null);
+    }
+    if (error && error.name === "LiveChatError" && error.info) {
+      return error.info;
+    }
+    if (error instanceof TypeError) {
+      return buildErrorInfo("API_OFFLINE", null, null);
+    }
+    return buildErrorInfo("NETWORK_ERROR", null, null);
+  }
+
+  function normalizedErrorCode(code, status) {
+    const normalized = String(code || "").toUpperCase();
+    if (ERROR_DEFINITIONS[normalized]) return normalized;
+    if (status === 400) return "INVALID_REQUEST";
+    if (status === 422) return "VALIDATION_ERROR";
+    if (status === 429) return "RATE_LIMITED";
+    if (status === 502 || status === 503) return "UPSTREAM_UNAVAILABLE";
+    if (status >= 500) return "SERVER_ERROR";
+    return "INTERNAL_ERROR";
+  }
+
+  function buildErrorInfo(code, status, queryId) {
+    const definition = ERROR_DEFINITIONS[code] || ERROR_DEFINITIONS.INTERNAL_ERROR;
+    return {
+      code,
+      status,
+      queryId: safeToken(queryId),
+      message: definition.message,
+      rawText: definition.rawText,
+      correctedText: definition.correctedText,
+      retryable: definition.retryable,
+    };
+  }
+
+  function safeToken(value) {
+    const text = String(value || "").trim();
+    if (!text) return null;
+    const safe = text.replace(/[^a-zA-Z0-9._:-]/g, "");
+    return safe.slice(0, 96) || null;
+  }
+
   const exportedForTests = {
     normalizeApiBase,
     buildApiUrl,
@@ -118,6 +267,9 @@
     evidenceIdsFrom,
     correctedClaimCount,
     correctedFallbackText,
+    hasDualAnswerPayload,
+    errorInfoFromHttp,
+    errorInfoFromException,
   };
 
   if (typeof module !== "undefined" && module.exports) {
@@ -136,6 +288,7 @@
     const form = document.getElementById("live-chat-form");
     const questionInput = document.getElementById("live-question");
     const sendButton = document.getElementById("live-send");
+    const retryButton = document.getElementById("live-retry");
     const statusEl = document.getElementById("live-status");
     const errorEl = document.getElementById("live-error");
     const apiInput = document.getElementById("live-api-base");
@@ -149,13 +302,15 @@
     const auditContainer = document.getElementById("live-audit-content");
 
     if (
-      !form || !questionInput || !sendButton || !statusEl || !errorEl ||
+      !form || !questionInput || !sendButton || !retryButton || !statusEl || !errorEl ||
       !apiInput || !rawText || !rawMeta || !correctedText || !correctedStatus ||
       !correctedMeta || !correctedCitations || !auditContainer
     ) return;
 
     apiInput.value = initialApiBase();
     setLiveState(root, statusEl, "idle");
+    let inFlight = false;
+    let lastQuestion = "";
 
     apiInput.addEventListener("change", () => {
       const normalized = normalizeApiBase(apiInput.value);
@@ -166,15 +321,30 @@
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const question = questionInput.value.trim();
+      submitQuestion(question);
+    });
+
+    retryButton.addEventListener("click", () => {
+      const question = lastQuestion || questionInput.value.trim();
+      if (question) questionInput.value = question;
+      submitQuestion(question);
+    });
+
+    async function submitQuestion(question) {
+      if (inFlight) return;
       if (!question) {
         setLiveState(root, statusEl, "failed");
+        retryButton.hidden = true;
         showError(errorEl, "Question must not be empty.");
         return;
       }
 
+      lastQuestion = question;
       clearError(errorEl);
+      retryButton.hidden = true;
+      inFlight = true;
       setLiveState(root, statusEl, "submitting");
-      setBusy(sendButton, true);
+      setBusy(sendButton, retryButton, true);
       renderPending(
         rawText,
         rawMeta,
@@ -203,7 +373,23 @@
 
         const payload = await readJsonSafely(response);
         if (!response.ok) {
-          throw new LiveChatError(apiErrorMessage(payload, response.status));
+          const errorInfo = errorInfoFromHttp(response.status, payload);
+          if (hasDualAnswerPayload(payload)) {
+            renderResponse(payload, {
+              rawText,
+              rawMeta,
+              correctedText,
+              correctedStatus,
+              correctedMeta,
+              correctedCitations,
+              auditContainer,
+            });
+            showError(errorEl, errorBannerText(errorInfo));
+            retryButton.hidden = !errorInfo.retryable;
+            setLiveState(root, statusEl, "completed");
+            return;
+          }
+          throw new LiveChatError(errorInfo);
         }
 
         renderResponse(payload, {
@@ -217,17 +403,26 @@
         });
         setLiveState(root, statusEl, "completed");
       } catch (error) {
-        const message = error.name === "AbortError"
-          ? "Anchor API request timed out."
-          : error.message || "Anchor API request failed.";
-        showError(errorEl, message);
-        renderUnavailable(correctedText, correctedStatus, correctedMeta, correctedCitations);
+        const errorInfo = errorInfoFromException(error);
+        showError(errorEl, errorBannerText(errorInfo));
+        renderErrorState(
+          rawText,
+          rawMeta,
+          correctedText,
+          correctedStatus,
+          correctedMeta,
+          correctedCitations,
+          auditContainer,
+          errorInfo,
+        );
+        retryButton.hidden = !errorInfo.retryable;
         setLiveState(root, statusEl, "failed");
       } finally {
         window.clearTimeout(timeout);
-        setBusy(sendButton, false);
+        inFlight = false;
+        setBusy(sendButton, retryButton, false);
       }
-    });
+    }
   }
 
   function initialApiBase() {
@@ -259,9 +454,11 @@
     statusEl.textContent = LIVE_STATE_LABELS[normalized];
   }
 
-  function setBusy(button, busy) {
-    button.disabled = busy;
-    button.setAttribute("aria-busy", busy ? "true" : "false");
+  function setBusy(sendButton, retryButton, busy) {
+    sendButton.disabled = busy;
+    retryButton.disabled = busy;
+    sendButton.setAttribute("aria-busy", busy ? "true" : "false");
+    retryButton.setAttribute("aria-busy", busy ? "true" : "false");
   }
 
   function renderPending(
@@ -336,6 +533,48 @@
     renderCorrectedSummary(correctedMeta, { citations: [], corrections: [] }, "unavailable");
     setText(correctedText, correctedFallbackText("unavailable"));
     renderCorrectedCitations(correctedCitations, []);
+  }
+
+  function renderErrorState(
+    rawText,
+    rawMeta,
+    correctedText,
+    correctedStatus,
+    correctedMeta,
+    correctedCitations,
+    auditContainer,
+    errorInfo,
+  ) {
+    renderRawFailure(rawText, rawMeta, errorInfo);
+    renderCorrectionFailure(correctedText, correctedStatus, correctedMeta, correctedCitations, errorInfo);
+    renderErrorAudit(auditContainer, errorInfo);
+  }
+
+  function renderRawFailure(rawText, rawMeta, errorInfo) {
+    replaceChildren(rawMeta);
+    appendPill(rawMeta, "Not Anchor-verified");
+    appendPill(rawMeta, "raw_answer: failed");
+    appendPill(rawMeta, `error: ${valueOrDash(errorInfo.code)}`);
+    setText(rawText, errorInfo.rawText || "Raw Answer is unavailable.");
+  }
+
+  function renderCorrectionFailure(correctedText, correctedStatus, correctedMeta, correctedCitations, errorInfo) {
+    renderStatus(correctedStatus, "unavailable");
+    renderCorrectedSummary(correctedMeta, { citations: [], corrections: [] }, "unavailable");
+    setText(correctedText, errorInfo.correctedText || "Anchor correction was not run.");
+    renderCorrectedCitations(correctedCitations, []);
+  }
+
+  function renderErrorAudit(container, errorInfo) {
+    replaceChildren(container);
+    appendKeyValueSection(container, "Audit", [
+      ["query_id", errorInfo.queryId],
+      ["error", errorInfo.code],
+      ["http_status", errorInfo.status],
+      ["raw_answer_preserved", false],
+      ["correction_performed", false],
+    ]);
+    appendTextListSection(container, "Notes", [errorInfo.message]);
   }
 
   function renderStatus(container, status) {
@@ -571,17 +810,21 @@
     }
   }
 
-  function apiErrorMessage(payload, status) {
-    const error = payload && payload.error ? payload.error : null;
-    const code = error && error.code ? error.code : `HTTP_${status}`;
-    const message = error && error.message ? error.message : "Anchor API request failed.";
-    const queryId = error && error.query_id ? ` query_id=${error.query_id}` : "";
-    return `${code}: ${message}${queryId}`;
+  function errorBannerText(errorInfo) {
+    const queryPart = errorInfo.queryId ? ` query_id=${errorInfo.queryId}` : "";
+    return `${errorInfo.code}: ${errorInfo.message}${queryPart}`;
   }
 
-  function LiveChatError(message) {
+  function LiveChatError(info) {
     this.name = "LiveChatError";
-    this.message = message;
+    this.info = info;
+    this.message = info && info.message ? info.message : "Anchor API request failed.";
   }
   LiveChatError.prototype = Object.create(Error.prototype);
+
+  function InvalidApiBaseUrlError() {
+    this.name = "InvalidApiBaseUrlError";
+    this.message = "Invalid API URL.";
+  }
+  InvalidApiBaseUrlError.prototype = Object.create(Error.prototype);
 })();

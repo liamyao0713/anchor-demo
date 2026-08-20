@@ -65,18 +65,29 @@
   flex-wrap: wrap;
 }
 
-.live-send {
+.live-send,
+.live-retry {
   min-height: 38px;
   padding: 0 16px;
-  border: 0;
   border-radius: 8px;
-  background: #123b63;
-  color: #fff;
   font-weight: 900;
   cursor: pointer;
 }
 
-.live-send:disabled {
+.live-send {
+  border: 0;
+  background: #123b63;
+  color: #fff;
+}
+
+.live-retry {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #123b63;
+}
+
+.live-send:disabled,
+.live-retry:disabled {
   cursor: wait;
   opacity: .62;
 }
@@ -283,7 +294,8 @@
     align-items: stretch;
   }
 
-  .live-send {
+  .live-send,
+  .live-retry {
     width: 100%;
   }
 

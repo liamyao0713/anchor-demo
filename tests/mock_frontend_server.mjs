@@ -15,7 +15,9 @@ const contentTypes = new Map([
 const server = createServer(async (request, response) => {
   if (request.method === "POST" && request.url === "/api/chat") {
     const requestBody = await consumeRequest(request);
-    sendJson(response, mockChatResponse(requestBody));
+    const mockResponse = mockChatResponse(requestBody);
+    if (mockResponse.delayMs) await delay(mockResponse.delayMs);
+    sendJson(response, mockResponse.body, mockResponse.status);
     return;
   }
 
@@ -84,8 +86,38 @@ function mockChatResponse(requestBody) {
     grounded_by_anchor: false,
     verification_status: "uncorrected",
   };
-  if (/unavailable/i.test(question)) {
+  if (/status400/i.test(question)) {
+    return errorResponse(400, "INVALID_REQUEST", "Traceback at /Users/private/server.py");
+  }
+  if (/status422/i.test(question)) {
+    return errorResponse(422, "VALIDATION_ERROR", "Validation failed for request body.");
+  }
+  if (/status429/i.test(question)) {
+    return errorResponse(429, "RATE_LIMITED", "Too many requests.");
+  }
+  if (/status500/i.test(question)) {
+    return errorResponse(500, "INTERNAL_ERROR", "Traceback at /Users/private/app.py");
+  }
+  if (/status502/i.test(question)) {
+    return errorResponse(502, "UPSTREAM_UNAVAILABLE", "Upstream failed.");
+  }
+  if (/status503/i.test(question)) {
+    return errorResponse(503, "UPSTREAM_UNAVAILABLE", "Service unavailable.");
+  }
+  if (/llm unavailable/i.test(question)) {
+    return errorResponse(502, "LLM_UNAVAILABLE", "Base LLM unavailable.");
+  }
+  if (/llm timeout/i.test(question)) {
+    return errorResponse(503, "LLM_TIMEOUT", "Base LLM timed out.");
+  }
+  if (/slow/i.test(question)) {
     return {
+      ...okResponse(successBody(question, rawAnswer)),
+      delayMs: 2500,
+    };
+  }
+  if (/database unavailable|retrieval unavailable|calibration unavailable/i.test(question)) {
+    return okResponse({
       ...baseResponse(question, rawAnswer),
       corrected_answer: {
         text: "Anchor calibration is currently unavailable.",
@@ -100,10 +132,10 @@ function mockChatResponse(requestBody) {
         evidence_status: "unavailable",
         notes: ["mocked unavailable browser test"],
       },
-    };
+    });
   }
   if (/insufficient/i.test(question)) {
-    return {
+    return okResponse({
       ...baseResponse(question, rawAnswer),
       corrected_answer: {
         text: "Anchor 当前知识库中没有足够证据完成可靠核验/矫正。",
@@ -128,8 +160,12 @@ function mockChatResponse(requestBody) {
         evidence_status: "insufficient",
         notes: ["mocked insufficient browser test"],
       },
-    };
+    });
   }
+  return okResponse(successBody(question, rawAnswer));
+}
+
+function successBody(question, rawAnswer) {
   return {
     ...baseResponse(question, rawAnswer),
     corrected_answer: {
@@ -205,6 +241,23 @@ function mockChatResponse(requestBody) {
   };
 }
 
+function okResponse(body) {
+  return { status: 200, body };
+}
+
+function errorResponse(status, code, message) {
+  return {
+    status,
+    body: {
+      error: {
+        code,
+        message,
+        query_id: "mock-query-id",
+      },
+    },
+  };
+}
+
 function baseResponse(question, rawAnswer) {
   return {
     query_id: "mock-query-id",
@@ -224,9 +277,13 @@ function parseQuestion(requestBody) {
   }
 }
 
-function sendJson(response, payload) {
+function delay(ms) {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
+}
+
+function sendJson(response, payload, status = 200) {
   const body = JSON.stringify(payload);
-  response.writeHead(200, {
+  response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
   });
