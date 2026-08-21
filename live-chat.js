@@ -1,9 +1,9 @@
 (function () {
   "use strict";
 
-  const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+  const DEFAULT_API_BASE_URL = "https://api.882498.xyz";
   const API_STORAGE_KEY = "ANCHOR_API_BASE_URL";
-  const REQUEST_TIMEOUT_MS = 65000;
+  const REQUEST_TIMEOUT_MS = 90000;
 
   const STATUS_META = {
     sufficient: "sufficient",
