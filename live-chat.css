@@ -65,6 +65,45 @@
   flex-wrap: wrap;
 }
 
+.live-phase-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(96px, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+
+.live-phase-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid #d8e2ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.live-phase-chip.phase-active {
+  border-color: #7dd3fc;
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.live-phase-chip.phase-done {
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.live-phase-chip.phase-pending {
+  color: #64748b;
+}
+
 .live-send,
 .live-retry {
   min-height: 38px;
@@ -283,6 +322,14 @@
 
   .live-api {
     grid-template-columns: 1fr;
+  }
+
+  .live-phase-track {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .live-phase-chip {
+    justify-content: flex-start;
   }
 
   .live-api input,

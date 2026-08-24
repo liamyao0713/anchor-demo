@@ -4,6 +4,9 @@
   const DEFAULT_API_BASE_URL = "https://api.882498.xyz";
   const API_STORAGE_KEY = "ANCHOR_API_BASE_URL";
   const REQUEST_TIMEOUT_MS = 180000;
+  const JSON_CHAT_PATH = "/api/chat";
+  const STREAM_CHAT_PATH = "/api/chat/stream";
+  const STREAM_MEDIA_TYPE = "application/x-ndjson";
 
   const STATUS_META = {
     sufficient: "sufficient",
@@ -21,6 +24,26 @@
     processing: "Anchor is generating and calibrating the response...",
     completed: "Completed",
     failed: "Failed",
+  };
+  const PHASES = [
+    { key: "raw_generation", label: "Raw Answer", state: "processing" },
+    { key: "retrieval", label: "Evidence search", state: "processing" },
+    { key: "claim_extraction", label: "Claim extraction", state: "processing" },
+    { key: "verification", label: "Claim check", state: "processing" },
+    { key: "correction", label: "Correction", state: "processing" },
+  ];
+  const PHASE_META = {
+    idle: { label: "Idle", state: "idle" },
+    accepted: { label: "Submitting question", state: "submitting" },
+    submitting: { label: "Submitting question", state: "submitting" },
+    raw_generation: PHASES[0],
+    retrieval: PHASES[1],
+    claim_extraction: PHASES[2],
+    verification: PHASES[3],
+    verification_skipped: { label: "Evidence gate complete", state: "processing" },
+    correction: PHASES[4],
+    completed: { label: "Completed", state: "completed" },
+    failed: { label: "Failed", state: "failed" },
   };
 
   const ERROR_DEFINITIONS = {
@@ -139,6 +162,11 @@
     return LIVE_STATES.has(normalized) ? normalized : "failed";
   }
 
+  function phaseMeta(stage) {
+    const normalized = String(stage || "idle").toLowerCase();
+    return PHASE_META[normalized] || PHASE_META.raw_generation;
+  }
+
   function valueOrDash(value) {
     if (value === null || value === undefined || value === "") return "-";
     return String(value);
@@ -205,6 +233,13 @@
     return Boolean(payload && payload.raw_answer && payload.corrected_answer);
   }
 
+  function errorInfoFromStreamEvent(data) {
+    const apiError = data && data.error ? data.error : {};
+    const status = data && data.http_status ? Number(data.http_status) : null;
+    const code = normalizedErrorCode(apiError.code, status);
+    return buildErrorInfo(code, status, apiError.query_id);
+  }
+
   function errorInfoFromHttp(status, payload) {
     const apiError = payload && payload.error ? payload.error : {};
     const code = normalizedErrorCode(apiError.code, status);
@@ -269,7 +304,9 @@
     correctedFallbackText,
     hasDualAnswerPayload,
     errorInfoFromHttp,
+    errorInfoFromStreamEvent,
     errorInfoFromException,
+    phaseMeta,
   };
 
   if (typeof module !== "undefined" && module.exports) {
@@ -308,9 +345,14 @@
     ) return;
 
     apiInput.value = initialApiBase();
+    const phaseTrack = createPhaseTrack();
+    form.appendChild(phaseTrack);
     setLiveState(root, statusEl, "idle");
     let inFlight = false;
     let lastQuestion = "";
+    let activePhase = "idle";
+    let startedAtMs = 0;
+    let statusTimer = null;
 
     apiInput.addEventListener("change", () => {
       const normalized = normalizeApiBase(apiInput.value);
@@ -343,7 +385,9 @@
       clearError(errorEl);
       retryButton.hidden = true;
       inFlight = true;
-      setLiveState(root, statusEl, "submitting");
+      startedAtMs = Date.now();
+      startStatusTimer();
+      setActivePhase("accepted");
       setBusy(sendButton, retryButton, true);
       renderPending(
         rawText,
@@ -359,40 +403,7 @@
       const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
       try {
-        const endpoint = buildApiUrl(apiInput.value, "/api/chat");
-        setLiveState(root, statusEl, "processing");
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ question }),
-          signal: controller.signal,
-        });
-
-        const payload = await readJsonSafely(response);
-        if (!response.ok) {
-          const errorInfo = errorInfoFromHttp(response.status, payload);
-          if (hasDualAnswerPayload(payload)) {
-            renderResponse(payload, {
-              rawText,
-              rawMeta,
-              correctedText,
-              correctedStatus,
-              correctedMeta,
-              correctedCitations,
-              auditContainer,
-            });
-            showError(errorEl, errorBannerText(errorInfo));
-            retryButton.hidden = !errorInfo.retryable;
-            setLiveState(root, statusEl, "completed");
-            return;
-          }
-          throw new LiveChatError(errorInfo);
-        }
-
-        renderResponse(payload, {
+        const targets = {
           rawText,
           rawMeta,
           correctedText,
@@ -400,8 +411,33 @@
           correctedMeta,
           correctedCitations,
           auditContainer,
+        };
+        const streamed = await requestStreamedChat({
+          apiBase: apiInput.value,
+          question,
+          signal: controller.signal,
+          onStage: setActivePhase,
+          onRawAnswer: (raw) => {
+            renderRawAnswer(raw, rawText, rawMeta);
+            setText(
+              correctedText,
+              "Raw Answer is ready. Anchor is retrieving evidence and calibrating the corrected answer...",
+            );
+            appendPendingAudit(auditContainer, "Raw Answer returned; Anchor calibration is still running.");
+          },
+          onFinal: (payload) => renderResponse(payload, targets),
         });
-        setLiveState(root, statusEl, "completed");
+
+        if (streamed.fallback) {
+          setActivePhase("raw_generation");
+          const payload = await requestJsonChat({
+            apiBase: apiInput.value,
+            question,
+            signal: controller.signal,
+          });
+          renderResponse(payload, targets);
+        }
+        setActivePhase("completed");
       } catch (error) {
         const errorInfo = errorInfoFromException(error);
         showError(errorEl, errorBannerText(errorInfo));
@@ -416,13 +452,180 @@
           errorInfo,
         );
         retryButton.hidden = !errorInfo.retryable;
-        setLiveState(root, statusEl, "failed");
+        setActivePhase("failed");
       } finally {
         window.clearTimeout(timeout);
+        stopStatusTimer();
         inFlight = false;
         setBusy(sendButton, retryButton, false);
       }
     }
+
+    function setActivePhase(stage) {
+      activePhase = stage || activePhase;
+      const meta = phaseMeta(activePhase);
+      renderPhaseTrack(phaseTrack, activePhase);
+      setLiveState(root, statusEl, meta.state, phaseStatusText(activePhase, startedAtMs));
+    }
+
+    function startStatusTimer() {
+      stopStatusTimer();
+      statusTimer = window.setInterval(() => {
+        if (activePhase !== "idle") setActivePhase(activePhase);
+      }, 1000);
+    }
+
+    function stopStatusTimer() {
+      if (statusTimer !== null) {
+        window.clearInterval(statusTimer);
+        statusTimer = null;
+      }
+    }
+  }
+
+  async function requestStreamedChat(options) {
+    const endpoint = buildApiUrl(options.apiBase, STREAM_CHAT_PATH);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Accept": STREAM_MEDIA_TYPE,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question: options.question }),
+      signal: options.signal,
+    });
+
+    if ((response.status === 404 || response.status === 405) && !response.ok) {
+      return { fallback: true };
+    }
+
+    if (!response.ok) {
+      const payload = await readJsonSafely(response);
+      throw new LiveChatError(errorInfoFromHttp(response.status, payload));
+    }
+
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+    if (!response.body || !contentType.includes(STREAM_MEDIA_TYPE)) {
+      return { fallback: true };
+    }
+
+    let finalSeen = false;
+    await readNdjsonStream(response.body, (event) => {
+      const name = String(event && event.event || "");
+      const data = event && event.data ? event.data : {};
+      if (name === "stage") {
+        options.onStage(data.stage);
+      } else if (name === "raw_answer" && data.raw_answer) {
+        options.onRawAnswer(data.raw_answer);
+      } else if (name === "final") {
+        finalSeen = true;
+        options.onFinal(data);
+      } else if (name === "error") {
+        throw new LiveChatError(errorInfoFromStreamEvent(data));
+      }
+    });
+
+    if (!finalSeen) {
+      throw new LiveChatError(buildErrorInfo("UPSTREAM_UNAVAILABLE", null, null));
+    }
+    return { fallback: false };
+  }
+
+  async function requestJsonChat(options) {
+    const endpoint = buildApiUrl(options.apiBase, JSON_CHAT_PATH);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question: options.question }),
+      signal: options.signal,
+    });
+
+    const payload = await readJsonSafely(response);
+    if (!response.ok) {
+      if (hasDualAnswerPayload(payload)) return payload;
+      throw new LiveChatError(errorInfoFromHttp(response.status, payload));
+    }
+    return payload;
+  }
+
+  async function readNdjsonStream(body, onEvent) {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const result = await reader.read();
+      if (result.done) break;
+      buffer += decoder.decode(result.value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || "";
+      lines.forEach((line) => consumeNdjsonLine(line, onEvent));
+    }
+    buffer += decoder.decode();
+    consumeNdjsonLine(buffer, onEvent);
+  }
+
+  function consumeNdjsonLine(line, onEvent) {
+    const trimmed = String(line || "").trim();
+    if (!trimmed) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch (_error) {
+      throw new LiveChatError(buildErrorInfo("UPSTREAM_UNAVAILABLE", null, null));
+    }
+    onEvent(parsed);
+  }
+
+  function createPhaseTrack() {
+    const track = document.createElement("div");
+    track.className = "live-phase-track";
+    track.setAttribute("aria-label", "Anchor pipeline progress");
+    renderPhaseTrack(track, "idle");
+    return track;
+  }
+
+  function renderPhaseTrack(track, currentStage) {
+    replaceChildren(track);
+    const currentIndex = phaseIndex(currentStage);
+    PHASES.forEach((phase, index) => {
+      const chip = document.createElement("span");
+      chip.className = `live-phase-chip ${phaseClass(index, currentIndex, currentStage)}`;
+      chip.textContent = phase.label;
+      track.appendChild(chip);
+    });
+  }
+
+  function phaseClass(index, currentIndex, currentStage) {
+    if (currentStage === "completed") return "phase-done";
+    if (currentStage === "failed") return index <= Math.max(0, currentIndex) ? "phase-done" : "phase-pending";
+    if (currentIndex < 0) return "phase-pending";
+    if (index < currentIndex) return "phase-done";
+    if (index === currentIndex) return "phase-active";
+    return "phase-pending";
+  }
+
+  function phaseIndex(stage) {
+    if (stage === "verification_skipped") return PHASES.findIndex((phase) => phase.key === "correction");
+    return PHASES.findIndex((phase) => phase.key === stage);
+  }
+
+  function phaseStatusText(stage, startedAtMs) {
+    const meta = phaseMeta(stage);
+    const elapsed = elapsedSeconds(startedAtMs);
+    return elapsed === null ? meta.label : `${meta.label} · ${elapsed}s elapsed`;
+  }
+
+  function elapsedSeconds(startedAtMs) {
+    if (!startedAtMs) return null;
+    return Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
+  }
+
+  function appendPendingAudit(container, message) {
+    replaceChildren(container);
+    appendEmpty(container, message);
   }
 
   function initialApiBase() {

@@ -23,17 +23,23 @@ assert.match(html, /Not Anchor-verified/, "Raw Answer must be visibly marked not
 assert.match(html, /Anchor Corrected Answer/, "Corrected Answer area must remain separate");
 assert.match(html, /Audit \/ Difference \/ Citations/, "Audit area must remain separate");
 
-assert.match(js, /\/api\/chat/, "frontend must call /api/chat");
+assert.match(js, /\/api\/chat\/stream/, "frontend must prefer the streaming chat API");
+assert.match(js, /\/api\/chat/, "frontend must keep /api/chat fallback");
+assert.match(js, /application\/x-ndjson/, "frontend must consume streamed chat events as NDJSON");
 assert.match(js, /method:\s*"POST"/, "frontend must POST to chat API");
 assert.match(js, /raw_answer/, "frontend must map raw_answer");
 assert.match(js, /corrected_answer/, "frontend must map corrected_answer");
 assert.match(js, /grounded_by_anchor: false/, "Raw Answer must be shown as not grounded by Anchor");
 assert.match(js, /Not Anchor-verified/, "Raw Answer runtime metadata must include not Anchor-verified");
-assert.match(js, /Anchor is generating and calibrating the response/, "loading copy must be generic and non-streaming");
+assert.match(js, /Raw Answer is ready/, "frontend must render Raw Answer before final calibration completes");
+assert.match(js, /Evidence search/, "frontend must show evidence retrieval as a visible phase");
+assert.match(js, /Claim check/, "frontend must show claim verification as a visible phase");
+assert.match(js, /elapsed/, "frontend must show elapsed waiting time");
 assert.match(js, /submitting/, "frontend must model submitting state");
 assert.match(js, /processing/, "frontend must model processing state");
 assert.match(js, /completed/, "frontend must model completed state");
 assert.match(js, /failed/, "frontend must model failed state");
+assert.match(css, /live-phase-track/, "frontend must style the live phase tracker");
 assert.match(js, /corrected claims/, "Corrected Answer area must expose corrected claim count");
 assert.match(js, /errorInfoFromHttp/, "frontend must classify HTTP errors");
 assert.match(js, /errorInfoFromException/, "frontend must classify network and timeout errors");
@@ -62,6 +68,8 @@ assert.equal(liveChat.liveStateMeta("processing"), "processing");
 assert.equal(liveChat.liveStateMeta("completed"), "completed");
 assert.equal(liveChat.liveStateMeta("failed"), "failed");
 assert.equal(liveChat.liveStateMeta("unknown"), "failed");
+assert.equal(liveChat.phaseMeta("retrieval").label, "Evidence search");
+assert.equal(liveChat.phaseMeta("verification").label, "Claim check");
 assert.equal(
   liveChat.correctedFallbackText("insufficient"),
   "Anchor 当前知识库中没有足够证据完成可靠核验/矫正。",
@@ -81,6 +89,20 @@ assert.equal(liveChat.errorInfoFromHttp(429, {}).code, "RATE_LIMITED");
 assert.equal(liveChat.errorInfoFromHttp(500, {}).code, "SERVER_ERROR");
 assert.equal(liveChat.errorInfoFromHttp(502, {}).code, "UPSTREAM_UNAVAILABLE");
 assert.equal(liveChat.errorInfoFromHttp(503, {}).code, "UPSTREAM_UNAVAILABLE");
+assert.equal(
+  liveChat.errorInfoFromStreamEvent({
+    http_status: 502,
+    error: { code: "LLM_UNAVAILABLE", query_id: "q/unsafe path" },
+  }).code,
+  "LLM_UNAVAILABLE",
+);
+assert.equal(
+  liveChat.errorInfoFromStreamEvent({
+    http_status: 502,
+    error: { code: "LLM_UNAVAILABLE", query_id: "q/unsafe path" },
+  }).queryId,
+  "qunsafepath",
+);
 assert.equal(
   liveChat.errorInfoFromHttp(502, { error: { code: "LLM_UNAVAILABLE", query_id: "q/unsafe path" } }).code,
   "LLM_UNAVAILABLE",
