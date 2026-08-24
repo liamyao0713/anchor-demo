@@ -22,6 +22,8 @@ assert.match(html, /Uncorrected AI Answer/, "Raw Answer area must be explicitly 
 assert.match(html, /Not Anchor-verified/, "Raw Answer must be visibly marked not Anchor-verified");
 assert.match(html, /Anchor Corrected Answer/, "Corrected Answer area must remain separate");
 assert.match(html, /Audit \/ Difference \/ Citations/, "Audit area must remain separate");
+assert.match(html, /Anchor KB 当前主要覆盖呼吸医学/, "live chat must disclose the respiratory medicine KB scope");
+assert.match(html, /respiratory medicine/, "live chat must disclose the KB scope in English");
 
 assert.match(js, /\/api\/chat\/stream/, "frontend must prefer the streaming chat API");
 assert.match(js, /\/api\/chat/, "frontend must keep /api/chat fallback");
@@ -40,6 +42,7 @@ assert.match(js, /processing/, "frontend must model processing state");
 assert.match(js, /completed/, "frontend must model completed state");
 assert.match(js, /failed/, "frontend must model failed state");
 assert.match(css, /live-phase-track/, "frontend must style the live phase tracker");
+assert.match(css, /live-scope-note/, "frontend must style the KB scope note");
 assert.match(js, /corrected claims/, "Corrected Answer area must expose corrected claim count");
 assert.match(js, /errorInfoFromHttp/, "frontend must classify HTTP errors");
 assert.match(js, /errorInfoFromException/, "frontend must classify network and timeout errors");
