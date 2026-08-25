@@ -40,11 +40,14 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 }
 
 .aw-shell {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   padding: 0 20px 28px;
 }
 
 .aw-product-bar {
+  order: 0;
   position: sticky;
   top: 0;
   z-index: 20;
@@ -223,6 +226,8 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 .aw-question-card,
 .aw-summary-card,
 .aw-key-corrections {
+  order: 2;
+  width: 100%;
   max-width: 1640px;
   margin: 0 auto 14px;
   padding: 16px;
@@ -434,6 +439,8 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 }
 
 .aw-framework {
+  order: 2;
+  width: 100%;
   max-width: 1640px;
   margin: 0 auto 14px;
   padding: 0 2px;
@@ -470,6 +477,8 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 }
 
 .aw-clinical-impact {
+  order: 2;
+  width: 100%;
   max-width: 1640px;
   margin: 0 auto 14px;
   padding: 12px 14px;
@@ -529,6 +538,8 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 }
 
 .aw-workbench {
+  order: 2;
+  width: 100%;
   max-width: 1640px;
   margin: 0 auto;
 }
@@ -1094,18 +1105,20 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 }
 
 .aw-about {
+  order: 1;
+  width: 100%;
   max-width: 1640px;
-  margin: 24px auto 0;
-  padding-bottom: 2px;
+  margin: 0 auto 20px;
+  padding-bottom: 4px;
   scroll-margin-top: 86px;
 }
 
-.aw-about [data-lang-block] {
+.aw-shell [data-lang-block] {
   display: none;
 }
 
-.aw-about[data-about-language="en"] [data-lang-block="en"],
-.aw-about[data-about-language="zh"] [data-lang-block="zh"] {
+.aw-shell[data-ui-language="en"] [data-lang-block="en"],
+.aw-shell[data-ui-language="zh"] [data-lang-block="zh"] {
   display: block;
 }
 
@@ -1164,7 +1177,8 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 }
 
 .aw-about-copy {
-  max-width: 980px;
+  width: 100%;
+  max-width: none;
 }
 
 .aw-about-copy p {
@@ -1650,7 +1664,7 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   .aw-product-actions {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
   }
 

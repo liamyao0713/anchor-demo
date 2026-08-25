@@ -4,209 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AnchorAI | Evidence Verification Workspace</title>
-  <link rel="stylesheet" href="workspace.css?v=20260825-about">
-  <script src="workspace-api.js?v=20260825-about" defer></script>
-  <script src="workspace-adapter.js?v=20260825-about" defer></script>
-  <script src="workspace-state.js?v=20260825-about" defer></script>
-  <script src="workspace-export.js?v=20260825-about" defer></script>
-  <script src="workspace-ui.js?v=20260825-about" defer></script>
+  <link rel="stylesheet" href="workspace.css?v=20260825-i18n-about">
+  <script src="workspace-api.js?v=20260825-i18n-about" defer></script>
+  <script src="workspace-adapter.js?v=20260825-i18n-about" defer></script>
+  <script src="workspace-state.js?v=20260825-i18n-about" defer></script>
+  <script src="workspace-export.js?v=20260825-i18n-about" defer></script>
+  <script src="workspace-ui.js?v=20260825-i18n-about" defer></script>
 </head>
 <body class="anchor-workspace-mode">
-<main id="anchor-workspace" class="aw-shell" data-run-state="idle">
+<main id="anchor-workspace" class="aw-shell" data-run-state="idle" data-ui-language="en">
   <div class="aw-product-bar" role="banner">
     <div class="aw-brand">
       <div class="aw-brand-main">
         <span class="aw-brand-name">AnchorAI</span>
-        <span class="aw-page-name">Evidence Verification Workspace</span>
+        <span class="aw-page-name" data-i18n="pageName">Evidence Verification Workspace</span>
       </div>
-      <div class="aw-brand-subtitle">Evidence-grounded answer correction and audit</div>
+      <div class="aw-brand-subtitle" data-i18n="brandSubtitle">Evidence-grounded answer correction and audit</div>
     </div>
     <div class="aw-product-actions">
       <div class="aw-top-status" aria-live="polite">
         <span id="aw-connection" class="aw-connection aw-connection-checking">Checking</span>
         <span id="aw-api-host" class="aw-api-host">api.882498.xyz</span>
       </div>
-      <button id="aw-about-button" class="aw-button" type="button">About AnchorAI</button>
-      <button id="aw-settings-button" class="aw-button" type="button" aria-haspopup="dialog">Settings</button>
+      <div class="aw-language-toggle" role="group" aria-label="Page language" data-i18n-aria-label="languageToggle">
+        <button id="aw-lang-en" class="aw-lang-button active" type="button" data-ui-lang="en" aria-pressed="true">EN</button>
+        <button id="aw-lang-zh" class="aw-lang-button" type="button" data-ui-lang="zh" aria-pressed="false">中文</button>
+      </div>
+      <button id="aw-about-button" class="aw-button" type="button" data-i18n="aboutButton">About AnchorAI</button>
+      <button id="aw-settings-button" class="aw-button" type="button" aria-haspopup="dialog" data-i18n="settings">Settings</button>
       <div id="aw-export-wrap" class="aw-export-wrap">
-        <button id="aw-export-button" class="aw-primary-button aw-export-button" type="button" aria-haspopup="menu" aria-expanded="false">Export</button>
+        <button id="aw-export-button" class="aw-primary-button aw-export-button" type="button" aria-haspopup="menu" aria-expanded="false" data-i18n="export">Export</button>
         <div id="aw-export-menu" class="aw-export-menu" role="menu" hidden>
-          <button id="aw-export-markdown" class="aw-ghost-button" type="button" role="menuitem">Export Markdown report</button>
-          <button id="aw-export-json" class="aw-ghost-button" type="button" role="menuitem">Export audit JSON</button>
-          <button id="aw-copy-key-corrections" class="aw-ghost-button" type="button" role="menuitem">Copy key corrections</button>
-          <button id="aw-copy-query-id" class="aw-ghost-button" type="button" role="menuitem">Copy query ID</button>
-          <button id="aw-copy-run-details" class="aw-ghost-button" type="button" role="menuitem">Copy run details</button>
+          <button id="aw-export-markdown" class="aw-ghost-button" type="button" role="menuitem" data-i18n="exportMarkdown">Export Markdown report</button>
+          <button id="aw-export-json" class="aw-ghost-button" type="button" role="menuitem" data-i18n="exportJson">Export audit JSON</button>
+          <button id="aw-copy-key-corrections" class="aw-ghost-button" type="button" role="menuitem" data-i18n="copyKeyCorrections">Copy key corrections</button>
+          <button id="aw-copy-query-id" class="aw-ghost-button" type="button" role="menuitem" data-i18n="copyQueryId">Copy query ID</button>
+          <button id="aw-copy-run-details" class="aw-ghost-button" type="button" role="menuitem" data-i18n="copyRunDetails">Copy run details</button>
         </div>
       </div>
     </div>
   </div>
 
-  <section class="aw-question-card aw-card" aria-labelledby="aw-task-title">
-    <div class="aw-question-head">
-      <div>
-        <h1 id="aw-task-title">Live evidence verification</h1>
-        <div class="aw-question-meta">
-          <span id="aw-topic-tag" class="aw-meta-chip">Ready</span>
-          <span id="aw-model-tag" class="aw-meta-chip">Server-configured model</span>
-        </div>
-      </div>
-      <div id="aw-status-text" class="aw-status-line" aria-live="polite">Idle</div>
-    </div>
-    <p class="aw-scope-note">Anchor KB currently focuses on respiratory medicine; out-of-scope questions keep the uncorrected answer and are marked as insufficient evidence when Anchor cannot verify them.</p>
-    <form id="aw-question-form" class="aw-form-grid">
-      <label class="aw-label" for="aw-question">Medical question</label>
-      <textarea id="aw-question" class="aw-textarea" name="question" maxlength="8000" rows="5" placeholder="Enter a medical question for Anchor verification"></textarea>
-      <div class="aw-control-row">
-        <div class="aw-action-group">
-          <button id="aw-run" class="aw-primary-button" type="submit" disabled>Run verification</button>
-          <button id="aw-cancel" class="aw-button aw-cancel" type="button" hidden>Cancel</button>
-          <button id="aw-retry" class="aw-button aw-retry" type="button" hidden>Retry</button>
-          <button id="aw-clear" class="aw-ghost-button" type="button" disabled>Clear</button>
-          <button id="aw-copy-question" class="aw-ghost-button" type="button" disabled>Copy question</button>
-        </div>
-      </div>
-    </form>
-    <div id="aw-error" class="aw-error" role="alert" hidden></div>
-    <details class="aw-method">
-      <summary>Verification method</summary>
-      <ul class="aw-method-list">
-        <li>Pipeline: Raw answer, evidence search, claim extraction, claim check, correction.</li>
-        <li>KB scope: respiratory medicine, based on server-side Anchor KB readiness.</li>
-        <li>Schema: AnchorChatResponse fields returned by the API; no private system prompt is exposed.</li>
-      </ul>
-    </details>
-  </section>
-
-  <section class="aw-summary-card aw-card" aria-label="Verification status and summary">
-    <ol id="aw-pipeline" class="aw-pipeline" aria-label="Pipeline stages"></ol>
-    <div id="aw-summary-grid" class="aw-summary-grid"></div>
-  </section>
-
-  <section class="aw-framework" aria-label="Framework checks">
-    <div id="aw-framework-checks" class="aw-framework-checks"></div>
-  </section>
-
-  <section id="aw-clinical-impact" class="aw-clinical-impact" aria-label="Clinical impact warning" hidden></section>
-
-  <section id="aw-key-corrections" class="aw-key-corrections aw-card" aria-label="Key corrections"></section>
-
-  <section class="aw-workbench" aria-label="Evidence verification workspace">
-    <div class="aw-mobile-panel-tabs" role="tablist" aria-label="Workspace panels">
-      <button class="aw-panel-tab active" type="button" role="tab" aria-selected="true" data-panel="raw">A Raw</button>
-      <button class="aw-panel-tab" type="button" role="tab" aria-selected="false" data-panel="corrected">B Corrected</button>
-      <button class="aw-panel-tab" type="button" role="tab" aria-selected="false" data-panel="audit">C Audit</button>
-    </div>
-    <div class="aw-workspace-grid">
-      <article class="aw-workspace-panel aw-panel-a aw-mobile-active" data-panel="raw" aria-labelledby="aw-raw-title">
-        <header class="aw-panel-head">
-          <div class="aw-panel-title">
-            <span class="aw-letter">A</span>
-            <div>
-              <h2 id="aw-raw-title">Uncorrected answer</h2>
-              <p><span id="aw-raw-provider">-</span> / <span id="aw-raw-model">-</span> / <span id="aw-raw-verification">uncorrected</span></p>
-            </div>
-          </div>
-          <div class="aw-panel-actions">
-            <button id="aw-copy-raw" class="aw-ghost-button" type="button" disabled>Copy raw answer</button>
-          </div>
-        </header>
-        <div class="aw-panel-body">
-          <div id="aw-raw-meta" class="aw-question-meta"></div>
-          <div id="aw-raw-text" class="aw-answer">Raw answer has not been generated.</div>
-          <div id="aw-flagged-claims" class="aw-flagged-claims"></div>
-        </div>
-      </article>
-
-      <article class="aw-workspace-panel aw-panel-b" data-panel="corrected" aria-labelledby="aw-corrected-title">
-        <header class="aw-panel-head">
-          <div class="aw-panel-title">
-            <span class="aw-letter">B</span>
-            <div>
-              <h2 id="aw-corrected-title">Anchor-corrected answer</h2>
-              <p>KB-grounded / <span id="aw-corrected-evidence">-</span> / confidence <span id="aw-corrected-confidence">-</span></p>
-            </div>
-          </div>
-          <div class="aw-panel-actions">
-            <div class="aw-mode-toggle" role="group" aria-label="Corrected answer display mode">
-              <button class="aw-mode-button active" type="button" data-mode="clean" aria-pressed="true">Clean</button>
-              <button class="aw-mode-button" type="button" data-mode="tracked" aria-pressed="false">Tracked</button>
-            </div>
-            <button id="aw-copy-corrected" class="aw-ghost-button" type="button" disabled>Copy corrected answer</button>
-          </div>
-        </header>
-        <div class="aw-panel-body">
-          <div id="aw-corrected-text" class="aw-answer">Anchor-corrected answer will appear after the run finishes.</div>
-          <details id="aw-corrected-references" class="aw-references"></details>
-        </div>
-      </article>
-
-      <article class="aw-workspace-panel aw-panel-c" data-panel="audit" aria-labelledby="aw-audit-title">
-        <header class="aw-panel-head">
-          <div class="aw-panel-title">
-            <span class="aw-letter">C</span>
-            <div>
-              <h2 id="aw-audit-title">Audit / Differences / Citations</h2>
-              <p>Correction records, references and run details</p>
-            </div>
-          </div>
-          <div class="aw-panel-actions">
-            <button id="aw-download-audit-json" class="aw-ghost-button" type="button">Download audit JSON</button>
-          </div>
-        </header>
-        <div class="aw-audit-tabs" role="tablist" aria-label="Audit tabs">
-          <button class="aw-audit-tab active" type="button" role="tab" aria-selected="true" data-audit-tab="corrections">Corrections</button>
-          <button class="aw-audit-tab" type="button" role="tab" aria-selected="false" data-audit-tab="citations">Citations</button>
-          <button class="aw-audit-tab" type="button" role="tab" aria-selected="false" data-audit-tab="run-details">Run details</button>
-        </div>
-        <div class="aw-panel-body aw-audit-content">
-          <section class="aw-audit-panel" data-audit-panel="corrections" role="tabpanel">
-            <div class="aw-audit-toolbar">
-              <select id="aw-correction-category-filter" class="aw-select" aria-label="Filter corrections by category"></select>
-              <select id="aw-correction-status-filter" class="aw-select" aria-label="Filter corrections by status"></select>
-              <input id="aw-correction-search" class="aw-input" type="search" placeholder="Search claim ID or text" aria-label="Search corrections">
-            </div>
-            <div class="aw-audit-buttons">
-              <button id="aw-expand-corrections" class="aw-ghost-button" type="button">Expand all</button>
-              <button id="aw-collapse-corrections" class="aw-ghost-button" type="button">Collapse all</button>
-            </div>
-            <div id="aw-corrections-summary" class="aw-corrections-summary"></div>
-            <div id="aw-corrections-list" class="aw-corrections-list"></div>
-          </section>
-          <section class="aw-audit-panel" data-audit-panel="citations" role="tabpanel" hidden>
-            <div class="aw-citation-toolbar">
-              <select id="aw-citation-filter" class="aw-select" aria-label="Filter citations">
-                <option value="all">all</option>
-                <option value="problematic">problematic only</option>
-                <option value="corrected">used by correction</option>
-              </select>
-              <input id="aw-citation-search" class="aw-input" type="search" placeholder="Search PMID, DOI, title or claim ID" aria-label="Search citations">
-            </div>
-            <div id="aw-citations-list" class="aw-citations-list"></div>
-          </section>
-          <section class="aw-audit-panel" data-audit-panel="run-details" role="tabpanel" hidden>
-            <div class="aw-audit-buttons">
-              <button id="aw-copy-run-details-panel" class="aw-ghost-button" type="button">Copy run details</button>
-              <button id="aw-copy-query-id-panel" class="aw-ghost-button" type="button">Copy query ID</button>
-            </div>
-            <div id="aw-run-details"></div>
-          </section>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section id="aw-about" class="aw-about" aria-labelledby="aw-about-title" data-about-language="en">
+  <section id="aw-about" class="aw-about" aria-labelledby="aw-about-title">
     <div class="aw-about-head">
       <div>
-        <p class="aw-eyebrow">About AnchorAI</p>
+        <p class="aw-eyebrow" data-i18n="aboutEyebrow">About AnchorAI</p>
         <h2 id="aw-about-title">
           <span data-lang-block="en">A verification layer for evidence-grounded medical AI output</span>
           <span data-lang-block="zh">面向医疗 AI 输出的证据校准层</span>
         </h2>
-      </div>
-      <div class="aw-language-toggle" role="group" aria-label="About section language">
-        <button id="aw-about-lang-en" class="aw-lang-button active" type="button" data-about-lang="en" aria-pressed="true">EN</button>
-        <button id="aw-about-lang-zh" class="aw-lang-button" type="button" data-about-lang="zh" aria-pressed="false">中文</button>
       </div>
     </div>
 
@@ -235,7 +81,7 @@
 
     <section class="aw-about-section" aria-labelledby="aw-read-workspace-title">
       <div class="aw-section-heading">
-        <p class="aw-eyebrow">Workspace guide</p>
+        <p class="aw-eyebrow" data-i18n="workspaceGuideEyebrow">Workspace guide</p>
         <h2 id="aw-read-workspace-title">
           <span data-lang-block="en">How to read this workspace</span>
           <span data-lang-block="zh">如何阅读当前工作台</span>
@@ -244,19 +90,19 @@
       <div class="aw-read-guide">
         <button class="aw-read-card aw-read-card-a" type="button" data-read-panel="raw">
           <span class="aw-read-token">A</span>
-          <strong>Uncorrected answer</strong>
+          <strong data-i18n="readRawTitle">Uncorrected answer</strong>
           <span data-lang-block="en">Shows the model's original answer without Anchor rewriting. Claims that Anchor can reliably identify as suspicious or insufficiently supported are highlighted or listed.</span>
           <span data-lang-block="zh">显示模型的原始回答，不经过 Anchor 改写。Anchor 能可靠识别的可疑或证据不足 claim 会被高亮或列出。</span>
         </button>
         <button class="aw-read-card aw-read-card-b" type="button" data-read-panel="corrected">
           <span class="aw-read-token">B</span>
-          <strong>Anchor-corrected answer</strong>
+          <strong data-i18n="readCorrectedTitle">Anchor-corrected answer</strong>
           <span data-lang-block="en">Shows the answer calibrated against the current knowledge base and available evidence. Clean mode is for reading; Tracked mode shows claim-level changes and citation markers.</span>
           <span data-lang-block="zh">展示基于当前知识库和可用证据校正后的回答。Clean 模式用于直接阅读，Tracked 模式用于查看 claim 级修改和 citation 标记。</span>
         </button>
         <button class="aw-read-card aw-read-card-c" type="button" data-read-panel="audit">
           <span class="aw-read-token">C</span>
-          <strong>Audit / Differences / Citations</strong>
+          <strong data-i18n="readAuditTitle">Audit / Differences / Citations</strong>
           <span data-lang-block="en">Shows what the model said, what Anchor verified, why a correction was made, whether citations match the claim, and the run details needed for traceability.</span>
           <span data-lang-block="zh">展示模型原话、Anchor 核验后的表达、为什么校正、citation 是否真实且支持对应 claim，以及可追溯的运行细节。</span>
         </button>
@@ -265,7 +111,7 @@
 
     <section class="aw-about-section" aria-labelledby="aw-why-title">
       <div class="aw-section-heading">
-        <p class="aw-eyebrow">Why Anchor matters</p>
+        <p class="aw-eyebrow" data-i18n="whyEyebrow">Why Anchor matters</p>
         <h2 id="aw-why-title">
           <span data-lang-block="en">Why Anchor matters</span>
           <span data-lang-block="zh">为什么 Anchor 重要</span>
@@ -274,7 +120,7 @@
       <div class="aw-explainer-grid">
         <article class="aw-explainer-card">
           <span class="aw-card-icon" aria-hidden="true">!</span>
-          <h3>Evidence risk</h3>
+          <h3 data-i18n="evidenceRisk">Evidence risk</h3>
           <p data-lang-block="en">Medical LLM answers can contain citation errors, stale evidence, fabricated statements, and evidence drift.</p>
           <p data-lang-block="zh">医疗 LLM 回答可能包含错误引用、过时证据、内容编造和证据时效漂移。</p>
           <p data-lang-block="en">A fluent answer can look credible while its supporting paper is missing, mismatched, outdated, or weaker than the wording suggests.</p>
@@ -282,7 +128,7 @@
         </article>
         <article class="aw-explainer-card">
           <span class="aw-card-icon" aria-hidden="true">Rx</span>
-          <h3>Clinical consequence</h3>
+          <h3 data-i18n="clinicalConsequence">Clinical consequence</h3>
           <p data-lang-block="en">Unsupported or over-certain medical claims can affect interpretation, risk recognition, medication reasoning, and patient counseling.</p>
           <p data-lang-block="zh">缺乏证据或过度确定的医学论断，可能影响临床理解、风险识别、用药判断和患者沟通。</p>
           <p data-lang-block="en">Anchor separates what the model said from what the evidence can actually support, so uncertainty and limitations remain visible.</p>
@@ -290,7 +136,7 @@
         </article>
         <article class="aw-explainer-card">
           <span class="aw-card-icon" aria-hidden="true">OK</span>
-          <h3>Verifiable correction</h3>
+          <h3 data-i18n="verifiableCorrection">Verifiable correction</h3>
           <p data-lang-block="en">Anchor provides citation checks, KB-anchored claims, visible corrections, and a structured audit trail.</p>
           <p data-lang-block="zh">Anchor 提供可核验的 citation、KB 锚定的 claim、清晰可见的校正和结构化审计记录。</p>
           <p data-lang-block="en">The result is not a second black-box answer. It is a comparison between generated claims, available evidence, and the correction rationale.</p>
@@ -301,7 +147,7 @@
 
     <section class="aw-about-section" aria-labelledby="aw-moats-title">
       <div class="aw-section-heading">
-        <p class="aw-eyebrow">The 3 Anchor moats</p>
+        <p class="aw-eyebrow" data-i18n="moatsEyebrow">The 3 Anchor moats</p>
         <h2 id="aw-moats-title">
           <span data-lang-block="en">The 3 Anchor moats</span>
           <span data-lang-block="zh">Anchor 的 3 大差异化</span>
@@ -310,7 +156,7 @@
       <div class="aw-moat-grid">
         <article class="aw-explainer-card aw-moat-card">
           <span class="aw-card-icon" aria-hidden="true">KB</span>
-          <h3>Structured evidence KB</h3>
+          <h3 data-i18n="structuredEvidenceKb">Structured evidence KB</h3>
           <p data-lang-block="en">Anchor converts medical studies into structured evidence records across supported disease areas, preserving source trace and review metadata where those fields are available.</p>
           <p data-lang-block="zh">Anchor 将医学研究转化为覆盖受支持疾病领域的结构化证据记录，并在相关字段存在时保留来源溯源和审核元数据。</p>
           <p data-lang-block="en">This evidence layer is the foundation for claim verification and correction. The intended workflow is extraction, audit, review, and approval before evidence is used for grounding.</p>
@@ -318,7 +164,7 @@
         </article>
         <article class="aw-explainer-card aw-moat-card">
           <span class="aw-card-icon" aria-hidden="true">ABC</span>
-          <h3>Visible correction layer</h3>
+          <h3 data-i18n="visibleCorrectionLayer">Visible correction layer</h3>
           <p data-lang-block="en">The workspace keeps the original answer visible beside the Anchor-corrected answer and the correction audit.</p>
           <p data-lang-block="zh">工作台把模型原始回答、Anchor 校正回答和校正审计并排保留。</p>
           <p data-lang-block="en">Users can inspect what changed, why it changed, whether better evidence exists, and which citation or evidence record supports the revised wording.</p>
@@ -326,7 +172,7 @@
         </article>
         <article class="aw-explainer-card aw-moat-card">
           <span class="aw-card-icon" aria-hidden="true">ID</span>
-          <h3>Auditable trace</h3>
+          <h3 data-i18n="auditableTrace">Auditable trace</h3>
           <p data-lang-block="en">Claims, evidence, citations, corrections, query ID, and run details are linked so a medical AI output can be inspected after the fact.</p>
           <p data-lang-block="zh">claim、evidence、citation、correction、query ID 和 run details 之间保持关联，使医疗 AI 输出可以事后审计。</p>
           <p data-lang-block="en">That traceability is designed for high-risk and regulated medical AI use cases, without claiming regulatory approval or replacing clinical judgment.</p>
@@ -336,19 +182,173 @@
     </section>
   </section>
 
+  <section class="aw-question-card aw-card" aria-labelledby="aw-task-title">
+    <div class="aw-question-head">
+      <div>
+        <h1 id="aw-task-title">Live evidence verification</h1>
+        <div class="aw-question-meta">
+          <span id="aw-topic-tag" class="aw-meta-chip">Ready</span>
+          <span id="aw-model-tag" class="aw-meta-chip">Server-configured model</span>
+        </div>
+      </div>
+      <div id="aw-status-text" class="aw-status-line" aria-live="polite">Idle</div>
+    </div>
+    <p class="aw-scope-note" data-i18n="scopeNote">Anchor KB currently focuses on respiratory medicine; out-of-scope questions keep the uncorrected answer and are marked as insufficient evidence when Anchor cannot verify them.</p>
+    <form id="aw-question-form" class="aw-form-grid">
+      <label class="aw-label" for="aw-question" data-i18n="medicalQuestion">Medical question</label>
+      <textarea id="aw-question" class="aw-textarea" name="question" maxlength="8000" rows="5" placeholder="Enter a medical question for Anchor verification" data-i18n-placeholder="questionPlaceholder"></textarea>
+      <div class="aw-control-row">
+        <div class="aw-action-group">
+          <button id="aw-run" class="aw-primary-button" type="submit" disabled>Run verification</button>
+          <button id="aw-cancel" class="aw-button aw-cancel" type="button" hidden data-i18n="cancel">Cancel</button>
+          <button id="aw-retry" class="aw-button aw-retry" type="button" hidden data-i18n="retry">Retry</button>
+          <button id="aw-clear" class="aw-ghost-button" type="button" disabled data-i18n="clear">Clear</button>
+          <button id="aw-copy-question" class="aw-ghost-button" type="button" disabled data-i18n="copyQuestion">Copy question</button>
+        </div>
+      </div>
+    </form>
+    <div id="aw-error" class="aw-error" role="alert" hidden></div>
+    <details class="aw-method">
+      <summary data-i18n="verificationMethod">Verification method</summary>
+      <ul class="aw-method-list">
+        <li data-i18n="methodPipeline">Pipeline: Raw answer, evidence search, claim extraction, claim check, correction.</li>
+        <li data-i18n="methodScope">KB scope: respiratory medicine, based on server-side Anchor KB readiness.</li>
+        <li data-i18n="methodSchema">Schema: AnchorChatResponse fields returned by the API; no private system prompt is exposed.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="aw-summary-card aw-card" aria-label="Verification status and summary" data-i18n-aria-label="summaryAria">
+    <ol id="aw-pipeline" class="aw-pipeline" aria-label="Pipeline stages" data-i18n-aria-label="pipelineAria"></ol>
+    <div id="aw-summary-grid" class="aw-summary-grid"></div>
+  </section>
+
+  <section class="aw-framework" aria-label="Framework checks" data-i18n-aria-label="frameworkAria">
+    <div id="aw-framework-checks" class="aw-framework-checks"></div>
+  </section>
+
+  <section id="aw-clinical-impact" class="aw-clinical-impact" aria-label="Clinical impact warning" data-i18n-aria-label="clinicalImpactAria" hidden></section>
+
+  <section id="aw-key-corrections" class="aw-key-corrections aw-card" aria-label="Key corrections" data-i18n-aria-label="keyCorrections"></section>
+
+  <section class="aw-workbench" aria-label="Evidence verification workspace" data-i18n-aria-label="workbenchAria">
+    <div class="aw-mobile-panel-tabs" role="tablist" aria-label="Workspace panels" data-i18n-aria-label="workspacePanelsAria">
+      <button class="aw-panel-tab active" type="button" role="tab" aria-selected="true" data-panel="raw" data-i18n="panelTabRaw">A Raw</button>
+      <button class="aw-panel-tab" type="button" role="tab" aria-selected="false" data-panel="corrected" data-i18n="panelTabCorrected">B Corrected</button>
+      <button class="aw-panel-tab" type="button" role="tab" aria-selected="false" data-panel="audit" data-i18n="panelTabAudit">C Audit</button>
+    </div>
+    <div class="aw-workspace-grid">
+      <article class="aw-workspace-panel aw-panel-a aw-mobile-active" data-panel="raw" aria-labelledby="aw-raw-title">
+        <header class="aw-panel-head">
+          <div class="aw-panel-title">
+            <span class="aw-letter">A</span>
+            <div>
+              <h2 id="aw-raw-title" data-i18n="rawTitle">Uncorrected answer</h2>
+              <p><span id="aw-raw-provider">-</span> / <span id="aw-raw-model">-</span> / <span id="aw-raw-verification">uncorrected</span></p>
+            </div>
+          </div>
+          <div class="aw-panel-actions">
+            <button id="aw-copy-raw" class="aw-ghost-button" type="button" disabled data-i18n="copyRawAnswer">Copy raw answer</button>
+          </div>
+        </header>
+        <div class="aw-panel-body">
+          <div id="aw-raw-meta" class="aw-question-meta"></div>
+          <div id="aw-raw-text" class="aw-answer">Raw answer has not been generated.</div>
+          <div id="aw-flagged-claims" class="aw-flagged-claims"></div>
+        </div>
+      </article>
+
+      <article class="aw-workspace-panel aw-panel-b" data-panel="corrected" aria-labelledby="aw-corrected-title">
+        <header class="aw-panel-head">
+          <div class="aw-panel-title">
+            <span class="aw-letter">B</span>
+            <div>
+              <h2 id="aw-corrected-title" data-i18n="correctedTitle">Anchor-corrected answer</h2>
+              <p><span data-i18n="kbGrounded">KB-grounded</span> / <span id="aw-corrected-evidence">-</span> / <span data-i18n="confidenceLower">confidence</span> <span id="aw-corrected-confidence">-</span></p>
+            </div>
+          </div>
+          <div class="aw-panel-actions">
+            <div class="aw-mode-toggle" role="group" aria-label="Corrected answer display mode" data-i18n-aria-label="correctedModeAria">
+              <button class="aw-mode-button active" type="button" data-mode="clean" aria-pressed="true" data-i18n="clean">Clean</button>
+              <button class="aw-mode-button" type="button" data-mode="tracked" aria-pressed="false" data-i18n="tracked">Tracked</button>
+            </div>
+            <button id="aw-copy-corrected" class="aw-ghost-button" type="button" disabled data-i18n="copyCorrectedAnswer">Copy corrected answer</button>
+          </div>
+        </header>
+        <div class="aw-panel-body">
+          <div id="aw-corrected-text" class="aw-answer">Anchor-corrected answer will appear after the run finishes.</div>
+          <details id="aw-corrected-references" class="aw-references"></details>
+        </div>
+      </article>
+
+      <article class="aw-workspace-panel aw-panel-c" data-panel="audit" aria-labelledby="aw-audit-title">
+        <header class="aw-panel-head">
+          <div class="aw-panel-title">
+            <span class="aw-letter">C</span>
+            <div>
+              <h2 id="aw-audit-title" data-i18n="auditTitle">Audit / Differences / Citations</h2>
+              <p data-i18n="auditSubtitle">Correction records, references and run details</p>
+            </div>
+          </div>
+          <div class="aw-panel-actions">
+            <button id="aw-download-audit-json" class="aw-ghost-button" type="button" data-i18n="downloadAuditJson">Download audit JSON</button>
+          </div>
+        </header>
+        <div class="aw-audit-tabs" role="tablist" aria-label="Audit tabs" data-i18n-aria-label="auditTabsAria">
+          <button class="aw-audit-tab active" type="button" role="tab" aria-selected="true" data-audit-tab="corrections" data-i18n="corrections">Corrections</button>
+          <button class="aw-audit-tab" type="button" role="tab" aria-selected="false" data-audit-tab="citations" data-i18n="citations">Citations</button>
+          <button class="aw-audit-tab" type="button" role="tab" aria-selected="false" data-audit-tab="run-details" data-i18n="runDetails">Run details</button>
+        </div>
+        <div class="aw-panel-body aw-audit-content">
+          <section class="aw-audit-panel" data-audit-panel="corrections" role="tabpanel">
+            <div class="aw-audit-toolbar">
+              <select id="aw-correction-category-filter" class="aw-select" aria-label="Filter corrections by category" data-i18n-aria-label="categoryFilterAria"></select>
+              <select id="aw-correction-status-filter" class="aw-select" aria-label="Filter corrections by status" data-i18n-aria-label="statusFilterAria"></select>
+              <input id="aw-correction-search" class="aw-input" type="search" placeholder="Search claim ID or text" aria-label="Search corrections" data-i18n-placeholder="correctionSearchPlaceholder" data-i18n-aria-label="correctionSearchAria">
+            </div>
+            <div class="aw-audit-buttons">
+              <button id="aw-expand-corrections" class="aw-ghost-button" type="button" data-i18n="expandAll">Expand all</button>
+              <button id="aw-collapse-corrections" class="aw-ghost-button" type="button" data-i18n="collapseAll">Collapse all</button>
+            </div>
+            <div id="aw-corrections-summary" class="aw-corrections-summary"></div>
+            <div id="aw-corrections-list" class="aw-corrections-list"></div>
+          </section>
+          <section class="aw-audit-panel" data-audit-panel="citations" role="tabpanel" hidden>
+            <div class="aw-citation-toolbar">
+              <select id="aw-citation-filter" class="aw-select" aria-label="Filter citations" data-i18n-aria-label="citationFilterAria">
+                <option value="all" data-i18n="selectAll">all</option>
+                <option value="problematic" data-i18n="problematicOnly">problematic only</option>
+                <option value="corrected" data-i18n="usedByCorrection">used by correction</option>
+              </select>
+              <input id="aw-citation-search" class="aw-input" type="search" placeholder="Search PMID, DOI, title or claim ID" aria-label="Search citations" data-i18n-placeholder="citationSearchPlaceholder" data-i18n-aria-label="citationSearchAria">
+            </div>
+            <div id="aw-citations-list" class="aw-citations-list"></div>
+          </section>
+          <section class="aw-audit-panel" data-audit-panel="run-details" role="tabpanel" hidden>
+            <div class="aw-audit-buttons">
+              <button id="aw-copy-run-details-panel" class="aw-ghost-button" type="button" data-i18n="copyRunDetails">Copy run details</button>
+              <button id="aw-copy-query-id-panel" class="aw-ghost-button" type="button" data-i18n="copyQueryId">Copy query ID</button>
+            </div>
+            <div id="aw-run-details"></div>
+          </section>
+        </div>
+      </article>
+    </div>
+  </section>
+
   <div id="aw-settings-panel" class="aw-settings-panel" role="dialog" aria-modal="true" aria-labelledby="aw-settings-title" aria-hidden="true" hidden>
     <div id="aw-settings-backdrop" class="aw-settings-backdrop"></div>
     <div class="aw-settings-drawer">
       <div class="aw-settings-head">
-        <h2 id="aw-settings-title">Settings</h2>
-        <button id="aw-settings-close" class="aw-icon-button" type="button" aria-label="Close settings">X</button>
+        <h2 id="aw-settings-title" data-i18n="settings">Settings</h2>
+        <button id="aw-settings-close" class="aw-icon-button" type="button" aria-label="Close settings" data-i18n-aria-label="closeSettings">X</button>
       </div>
-      <label class="aw-label" for="aw-api-base">API Base URL</label>
+      <label class="aw-label" for="aw-api-base" data-i18n="apiBaseUrl">API Base URL</label>
       <input id="aw-api-base" class="aw-input" type="url" autocomplete="off" spellcheck="false">
       <div class="aw-settings-actions">
-        <button id="aw-save-api" class="aw-primary-button" type="button">Save</button>
-        <button id="aw-reset-api" class="aw-ghost-button" type="button">Restore default</button>
-        <button id="aw-test-connection" class="aw-ghost-button" type="button">Test connection</button>
+        <button id="aw-save-api" class="aw-primary-button" type="button" data-i18n="save">Save</button>
+        <button id="aw-reset-api" class="aw-ghost-button" type="button" data-i18n="restoreDefault">Restore default</button>
+        <button id="aw-test-connection" class="aw-ghost-button" type="button" data-i18n="testConnection">Test connection</button>
       </div>
       <div id="aw-settings-message" class="aw-settings-message" hidden></div>
       <div id="aw-settings-status" class="aw-settings-status"></div>

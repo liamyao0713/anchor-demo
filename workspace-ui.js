@@ -33,8 +33,493 @@
     "not_verifiable",
     "not_evaluated",
   ];
-  const ABOUT_LANGUAGE_STORAGE_KEY = "ANCHOR_ABOUT_LANGUAGE";
-  const ABOUT_LANGUAGES = new Set(["en", "zh"]);
+  const UI_LANGUAGE_STORAGE_KEY = "ANCHOR_UI_LANGUAGE";
+  const LEGACY_ABOUT_LANGUAGE_STORAGE_KEY = "ANCHOR_ABOUT_LANGUAGE";
+  const UI_LANGUAGES = new Set(["en", "zh"]);
+  let currentUiLanguage = "en";
+
+  const UI_TEXT = {
+    en: {
+      documentTitle: "AnchorAI | Evidence Verification Workspace",
+      pageName: "Evidence Verification Workspace",
+      brandSubtitle: "Evidence-grounded answer correction and audit",
+      languageToggle: "Page language",
+      aboutButton: "About AnchorAI",
+      aboutEyebrow: "About AnchorAI",
+      workspaceGuideEyebrow: "Workspace guide",
+      whyEyebrow: "Why Anchor matters",
+      moatsEyebrow: "The 3 Anchor moats",
+      settings: "Settings",
+      export: "Export",
+      exportMarkdown: "Export Markdown report",
+      exportJson: "Export audit JSON",
+      copyKeyCorrections: "Copy key corrections",
+      copyQueryId: "Copy query ID",
+      copyRunDetails: "Copy run details",
+      taskTitleIdle: "Live evidence verification",
+      ready: "Ready",
+      currentRun: "Current run",
+      serverConfiguredModel: "Server-configured model",
+      scopeNote: "Anchor KB currently focuses on respiratory medicine; out-of-scope questions keep the uncorrected answer and are marked as insufficient evidence when Anchor cannot verify them.",
+      medicalQuestion: "Medical question",
+      questionPlaceholder: "Enter a medical question for Anchor verification",
+      runVerification: "Run verification",
+      runningVerification: "Running verification...",
+      cancel: "Cancel",
+      retry: "Retry",
+      clear: "Clear",
+      copyQuestion: "Copy question",
+      verificationMethod: "Verification method",
+      methodPipeline: "Pipeline: Raw answer, evidence search, claim extraction, claim check, correction.",
+      methodScope: "KB scope: respiratory medicine, based on server-side Anchor KB readiness.",
+      methodSchema: "Schema: AnchorChatResponse fields returned by the API; no private system prompt is exposed.",
+      summaryAria: "Verification status and summary",
+      pipelineAria: "Pipeline stages",
+      frameworkAria: "Framework checks",
+      clinicalImpactAria: "Clinical impact warning",
+      keyCorrections: "Key corrections",
+      workbenchAria: "Evidence verification workspace",
+      workspacePanelsAria: "Workspace panels",
+      panelTabRaw: "A Raw",
+      panelTabCorrected: "B Corrected",
+      panelTabAudit: "C Audit",
+      rawTitle: "Uncorrected answer",
+      correctedTitle: "Anchor-corrected answer",
+      auditTitle: "Audit / Differences / Citations",
+      auditSubtitle: "Correction records, references and run details",
+      copyRawAnswer: "Copy raw answer",
+      copyCorrectedAnswer: "Copy corrected answer",
+      kbGrounded: "KB-grounded",
+      confidenceLower: "confidence",
+      correctedModeAria: "Corrected answer display mode",
+      clean: "Clean",
+      tracked: "Tracked",
+      downloadAuditJson: "Download audit JSON",
+      auditTabsAria: "Audit tabs",
+      corrections: "Corrections",
+      citations: "Citations",
+      runDetails: "Run details",
+      categoryFilterAria: "Filter corrections by category",
+      statusFilterAria: "Filter corrections by status",
+      correctionSearchAria: "Search corrections",
+      correctionSearchPlaceholder: "Search claim ID or text",
+      citationFilterAria: "Filter citations",
+      citationSearchAria: "Search citations",
+      citationSearchPlaceholder: "Search PMID, DOI, title or claim ID",
+      selectAll: "all",
+      problematicOnly: "problematic only",
+      usedByCorrection: "used by correction",
+      "option.all": "all",
+      "option.stale_evidence": "stale evidence",
+      "option.wrong_citation": "wrong citation",
+      "option.unsupported_claim": "unsupported claim",
+      "option.contradicted_claim": "contradicted claim",
+      "option.numerical_error": "numerical error",
+      "option.missing_context": "missing context",
+      "option.excessive_certainty": "excessive certainty",
+      "option.partial_support": "partial support",
+      "option.wording_calibration": "wording calibration",
+      "option.other": "other",
+      "option.supported": "supported",
+      "option.partially_supported": "partially_supported",
+      "option.unsupported": "unsupported",
+      "option.conflicting": "conflicting",
+      "option.not_verifiable": "not_verifiable",
+      "option.not_evaluated": "not_evaluated",
+      "verification.supported": "supported",
+      "verification.partially_supported": "partially_supported",
+      "verification.unsupported": "unsupported",
+      "verification.conflicting": "conflicting",
+      "verification.not_verifiable": "not_verifiable",
+      "verification.not_evaluated": "not_evaluated",
+      "verification.verified": "verified",
+      "verification.partial": "partial",
+      "verification.wrong_paper": "wrong paper",
+      "verification.unavailable": "unavailable",
+      "verification.unverified": "unverified",
+      "verification.uncorrected": "uncorrected",
+      "evidence.sufficient": "sufficient",
+      "evidence.partial": "partial",
+      "evidence.insufficient": "insufficient",
+      "evidence.unavailable": "unavailable",
+      "severity.high": "high",
+      "severity.medium": "medium",
+      "severity.low": "low",
+      "severity.info": "info",
+      "dependency.database": "database",
+      "dependency.retrieval": "retrieval",
+      "dependency.llm": "LLM",
+      "dependency.configuration": "configuration",
+      "dependency_status.ok": "ok",
+      "dependency_status.configured": "configured",
+      "dependency_status.ready": "ready",
+      "dependency_status.error": "error",
+      "dependency_status.unavailable": "unavailable",
+      "framework_status.passed": "Passed",
+      "framework_status.warning": "Warning",
+      "framework_status.failed": "Failed",
+      "framework_status.not_evaluated": "Not evaluated",
+      keyMeta: "{severity} severity | {claimId}",
+      citationIncompleteIssue: "Citation metadata is incomplete in the API response.",
+      boolTrue: "true",
+      boolFalse: "false",
+      expandAll: "Expand all",
+      collapseAll: "Collapse all",
+      closeSettings: "Close settings",
+      apiBaseUrl: "API Base URL",
+      save: "Save",
+      restoreDefault: "Restore default",
+      testConnection: "Test connection",
+      readRawTitle: "Uncorrected answer",
+      readCorrectedTitle: "Anchor-corrected answer",
+      readAuditTitle: "Audit / Differences / Citations",
+      evidenceRisk: "Evidence risk",
+      clinicalConsequence: "Clinical consequence",
+      verifiableCorrection: "Verifiable correction",
+      structuredEvidenceKb: "Structured evidence KB",
+      visibleCorrectionLayer: "Visible correction layer",
+      auditableTrace: "Auditable trace",
+      noFrameworkChecks: "No structured framework checks were returned by the API.",
+      noRunCorrections: "No run yet.",
+      noCorrectionReturned: "No correction records were returned for this run.",
+      noCorrectionMatches: "No correction records match the current filters.",
+      noCitationReturned: "No citation records were returned for this run.",
+      noCitationMatches: "No citation records match the current filters.",
+      noRunDetails: "Run details will appear after a response is returned.",
+      noRawAnswer: "Raw answer has not been generated.",
+      correctedPending: "Anchor-corrected answer will appear after the run finishes.",
+      noTextReturned: "No text returned.",
+      flaggedClaims: "Flagged claims",
+      correctedReferences: "Corrected-version references ({count})",
+      noAnchorCitations: "No Anchor citations returned.",
+      noExternalLink: "No external link",
+      observedStageEvents: "Observed stage events",
+      noStageEvents: "No streaming stage events were observed.",
+      noneReturned: "None returned.",
+      connectionPrefix: "Connection: {status}",
+      questionRequired: "Question must not be empty.",
+      requestFailed: "The request failed.",
+      idle: "Idle",
+      serverProcessing: "Server processing. Results will update as real stream events arrive.",
+      completed: "Completed",
+      failedFallback: "Request failed",
+      verificationCompleted: "Verification completed.",
+      apiInvalid: "API Base URL must be a valid http or https URL.",
+      apiSaved: "API Base URL saved. Existing run results were cleared.",
+      apiDefaultRestored: "Default API Base URL restored.",
+      questionCopied: "Question copied.",
+      rawCopied: "Raw answer copied.",
+      correctedCopied: "Corrected answer copied.",
+      queryIdCopied: "Query ID copied.",
+      runDetailsCopied: "Run details copied.",
+      keyCorrectionsCopied: "Key corrections copied.",
+      nothingToCopy: "Nothing to copy.",
+      copyUnavailable: "Copy is unavailable in this browser.",
+      runBeforeExport: "Run a question before exporting.",
+      markdownExported: "Markdown report exported.",
+      auditJsonExported: "Audit JSON exported.",
+      noMaterialCorrection: "No material correction was required.",
+      runForCorrections: "Run a question to see material corrections.",
+      materialCorrectionFallback: "No material correction was required.",
+      stageRaw: "Raw answer",
+      stageRetrieval: "Evidence search",
+      stageExtraction: "Claim extraction",
+      stageVerification: "Claim check",
+      stageCorrection: "Correction",
+      statusPending: "Pending",
+      statusRunning: "Running",
+      statusCompleted: "Completed",
+      statusFailed: "Failed",
+      statusSkipped: "Skipped",
+      connectionConnected: "Connected",
+      connectionDegraded: "Degraded",
+      connectionDisconnected: "Disconnected",
+      connectionChecking: "Checking",
+      metricEvidenceStatus: "Evidence status",
+      metricConfidence: "Confidence",
+      metricCitations: "Citations",
+      metricTotalClaims: "Total claims",
+      metricSupportedClaims: "Supported claims",
+      metricCorrectedClaims: "Corrected claims",
+      metricUnsupportedClaims: "Unsupported claims",
+      metricTotalLatency: "Total latency",
+      statSupported: "Supported",
+      statCorrected: "Corrected",
+      statUnsupported: "Unsupported",
+      correctionModelSaid: "Model said",
+      correctionVerified: "Verified",
+      correctionWhy: "Why",
+      correctionEvidence: "Supporting evidence",
+      correctionCitations: "Citation links",
+      correctionStatus: "Verification status",
+      citationEvidenceId: "Evidence ID",
+      citationTitle: "Title",
+      citationSource: "Source",
+      citationAuthors: "Authors",
+      citationYear: "Year",
+      citationPmid: "PMID",
+      citationDoi: "DOI",
+      citationUsedBy: "Used by corrections",
+      citationIssue: "Issue",
+      openPmid: "Open PMID {pmid}",
+      openDoi: "Open DOI",
+      openSource: "Open source",
+      runQueryId: "Query ID",
+      runStartTime: "Start time",
+      runEndTime: "End time",
+      runTotalLatency: "Total latency",
+      runProvider: "Provider",
+      runModel: "Model",
+      runEvidenceStatus: "Evidence status",
+      runConfidence: "Confidence / calibration",
+      runCorrectionPerformed: "Correction performed",
+      runRawPreserved: "Raw answer preserved",
+      runRetrievedEvidence: "Retrieved evidence count",
+      runUsableEvidence: "Usable evidence count",
+      warningsNotes: "Warnings / notes",
+      viewRawResponse: "View raw response",
+    },
+    zh: {
+      documentTitle: "AnchorAI | 证据核验工作台",
+      pageName: "证据核验工作台",
+      brandSubtitle: "基于证据的回答校正与审计",
+      languageToggle: "页面语言",
+      aboutButton: "关于 AnchorAI",
+      aboutEyebrow: "关于 AnchorAI",
+      workspaceGuideEyebrow: "工作台指南",
+      whyEyebrow: "为什么 Anchor 重要",
+      moatsEyebrow: "Anchor 的 3 大差异化",
+      settings: "设置",
+      export: "导出",
+      exportMarkdown: "导出 Markdown 报告",
+      exportJson: "导出审计 JSON",
+      copyKeyCorrections: "复制关键校正",
+      copyQueryId: "复制 Query ID",
+      copyRunDetails: "复制运行详情",
+      taskTitleIdle: "实时证据核验",
+      ready: "就绪",
+      currentRun: "当前运行",
+      serverConfiguredModel: "服务端配置模型",
+      scopeNote: "Anchor KB 当前主要覆盖呼吸医学；超出范围的问题会保留未校正回答，并在 Anchor 无法核验时标记为证据不足。",
+      medicalQuestion: "医学问题",
+      questionPlaceholder: "输入需要 Anchor 核验的医学问题",
+      runVerification: "运行核验",
+      runningVerification: "正在核验...",
+      cancel: "取消",
+      retry: "重试",
+      clear: "清空",
+      copyQuestion: "复制问题",
+      verificationMethod: "核验方法",
+      methodPipeline: "流程：原始回答、证据检索、claim 抽取、claim 核验、校正。",
+      methodScope: "知识库范围：呼吸医学，基于服务端 Anchor KB ready 状态。",
+      methodSchema: "响应结构：API 返回的 AnchorChatResponse 字段；前端不暴露私有 system prompt。",
+      summaryAria: "核验状态与摘要",
+      pipelineAria: "流程阶段",
+      frameworkAria: "框架检查",
+      clinicalImpactAria: "临床影响警示",
+      keyCorrections: "关键校正",
+      workbenchAria: "证据核验工作台",
+      workspacePanelsAria: "工作台面板",
+      panelTabRaw: "A 原始",
+      panelTabCorrected: "B 校正",
+      panelTabAudit: "C 审计",
+      rawTitle: "未校正回答",
+      correctedTitle: "Anchor 校正回答",
+      auditTitle: "审计 / 差异 / 引用",
+      auditSubtitle: "校正记录、参考文献和运行详情",
+      copyRawAnswer: "复制原始回答",
+      copyCorrectedAnswer: "复制校正回答",
+      kbGrounded: "KB 接地",
+      confidenceLower: "置信度",
+      correctedModeAria: "校正回答显示模式",
+      clean: "净版",
+      tracked: "追踪",
+      downloadAuditJson: "下载审计 JSON",
+      auditTabsAria: "审计标签",
+      corrections: "校正",
+      citations: "引用",
+      runDetails: "运行详情",
+      categoryFilterAria: "按类别筛选校正",
+      statusFilterAria: "按状态筛选校正",
+      correctionSearchAria: "搜索校正",
+      correctionSearchPlaceholder: "搜索 claim ID 或文本",
+      citationFilterAria: "筛选引用",
+      citationSearchAria: "搜索引用",
+      citationSearchPlaceholder: "搜索 PMID、DOI、标题或 claim ID",
+      selectAll: "全部",
+      problematicOnly: "只看有问题",
+      usedByCorrection: "校正版使用",
+      "option.all": "全部",
+      "option.stale_evidence": "过时证据",
+      "option.wrong_citation": "错误引用",
+      "option.unsupported_claim": "无证据支持 claim",
+      "option.contradicted_claim": "被证据反驳 claim",
+      "option.numerical_error": "数值错误",
+      "option.missing_context": "缺少上下文",
+      "option.excessive_certainty": "过度确定",
+      "option.partial_support": "部分支持",
+      "option.wording_calibration": "措辞校准",
+      "option.other": "其他",
+      "option.supported": "已支持",
+      "option.partially_supported": "部分支持",
+      "option.unsupported": "不支持",
+      "option.conflicting": "冲突",
+      "option.not_verifiable": "无法核验",
+      "option.not_evaluated": "未评估",
+      "verification.supported": "已支持",
+      "verification.partially_supported": "部分支持",
+      "verification.unsupported": "不支持",
+      "verification.conflicting": "冲突",
+      "verification.not_verifiable": "无法核验",
+      "verification.not_evaluated": "未评估",
+      "verification.verified": "已核验",
+      "verification.partial": "部分核验",
+      "verification.wrong_paper": "文献不匹配",
+      "verification.unavailable": "不可用",
+      "verification.unverified": "未核验",
+      "verification.uncorrected": "未校正",
+      "evidence.sufficient": "证据充分",
+      "evidence.partial": "部分证据",
+      "evidence.insufficient": "证据不足",
+      "evidence.unavailable": "证据不可用",
+      "severity.high": "高",
+      "severity.medium": "中",
+      "severity.low": "低",
+      "severity.info": "信息",
+      "dependency.database": "数据库",
+      "dependency.retrieval": "检索",
+      "dependency.llm": "LLM",
+      "dependency.configuration": "配置",
+      "dependency_status.ok": "正常",
+      "dependency_status.configured": "已配置",
+      "dependency_status.ready": "就绪",
+      "dependency_status.error": "错误",
+      "dependency_status.unavailable": "不可用",
+      "framework_status.passed": "通过",
+      "framework_status.warning": "警告",
+      "framework_status.failed": "失败",
+      "framework_status.not_evaluated": "未评估",
+      keyMeta: "{severity}严重程度 | {claimId}",
+      citationIncompleteIssue: "API 响应中的 citation 元数据不完整。",
+      boolTrue: "是",
+      boolFalse: "否",
+      expandAll: "全部展开",
+      collapseAll: "全部折叠",
+      closeSettings: "关闭设置",
+      apiBaseUrl: "API Base URL",
+      save: "保存",
+      restoreDefault: "恢复默认",
+      testConnection: "测试连接",
+      readRawTitle: "未校正回答",
+      readCorrectedTitle: "Anchor 校正回答",
+      readAuditTitle: "审计 / 差异 / 引用",
+      evidenceRisk: "证据风险",
+      clinicalConsequence: "临床影响",
+      verifiableCorrection: "可核验校正",
+      structuredEvidenceKb: "结构化证据知识库",
+      visibleCorrectionLayer: "可视化校正层",
+      auditableTrace: "可审计追溯",
+      noFrameworkChecks: "API 未返回结构化框架检查。",
+      noRunCorrections: "尚未运行。",
+      noCorrectionReturned: "本次运行未返回校正记录。",
+      noCorrectionMatches: "没有校正记录匹配当前筛选条件。",
+      noCitationReturned: "本次运行未返回引用记录。",
+      noCitationMatches: "没有引用记录匹配当前筛选条件。",
+      noRunDetails: "响应返回后会显示运行详情。",
+      noRawAnswer: "尚未生成原始回答。",
+      correctedPending: "运行完成后会显示 Anchor 校正回答。",
+      noTextReturned: "未返回文本。",
+      flaggedClaims: "标记的 claims",
+      correctedReferences: "校正版参考文献（{count}）",
+      noAnchorCitations: "未返回 Anchor citation。",
+      noExternalLink: "无外部链接",
+      observedStageEvents: "观察到的阶段事件",
+      noStageEvents: "未观察到 streaming 阶段事件。",
+      noneReturned: "未返回。",
+      connectionPrefix: "连接：{status}",
+      questionRequired: "问题不能为空。",
+      requestFailed: "请求失败。",
+      idle: "空闲",
+      serverProcessing: "服务端处理中。结果会随真实 stream 事件更新。",
+      completed: "已完成",
+      failedFallback: "请求失败",
+      verificationCompleted: "核验完成。",
+      apiInvalid: "API Base URL 必须是有效的 http 或 https URL。",
+      apiSaved: "API Base URL 已保存，已有运行结果已清理。",
+      apiDefaultRestored: "已恢复默认 API Base URL。",
+      questionCopied: "问题已复制。",
+      rawCopied: "原始回答已复制。",
+      correctedCopied: "校正回答已复制。",
+      queryIdCopied: "Query ID 已复制。",
+      runDetailsCopied: "运行详情已复制。",
+      keyCorrectionsCopied: "关键校正已复制。",
+      nothingToCopy: "没有可复制内容。",
+      copyUnavailable: "当前浏览器不可用复制功能。",
+      runBeforeExport: "请先运行一个问题再导出。",
+      markdownExported: "Markdown 报告已导出。",
+      auditJsonExported: "审计 JSON 已导出。",
+      noMaterialCorrection: "无需实质性校正。",
+      runForCorrections: "运行问题后查看实质性校正。",
+      materialCorrectionFallback: "无需实质性校正。",
+      stageRaw: "原始回答",
+      stageRetrieval: "证据检索",
+      stageExtraction: "Claim 抽取",
+      stageVerification: "Claim 核验",
+      stageCorrection: "校正",
+      statusPending: "待处理",
+      statusRunning: "运行中",
+      statusCompleted: "已完成",
+      statusFailed: "失败",
+      statusSkipped: "已跳过",
+      connectionConnected: "已连接",
+      connectionDegraded: "部分可用",
+      connectionDisconnected: "未连接",
+      connectionChecking: "检查中",
+      metricEvidenceStatus: "证据状态",
+      metricConfidence: "置信度",
+      metricCitations: "引用数",
+      metricTotalClaims: "Claim 总数",
+      metricSupportedClaims: "已支持 claims",
+      metricCorrectedClaims: "已校正 claims",
+      metricUnsupportedClaims: "不支持 claims",
+      metricTotalLatency: "总耗时",
+      statSupported: "已支持",
+      statCorrected: "已校正",
+      statUnsupported: "不支持",
+      correctionModelSaid: "模型原话",
+      correctionVerified: "核验后表达",
+      correctionWhy: "校正原因",
+      correctionEvidence: "支持证据",
+      correctionCitations: "Citation 链接",
+      correctionStatus: "核验状态",
+      citationEvidenceId: "Evidence ID",
+      citationTitle: "标题",
+      citationSource: "来源",
+      citationAuthors: "作者",
+      citationYear: "年份",
+      citationPmid: "PMID",
+      citationDoi: "DOI",
+      citationUsedBy: "用于哪些校正",
+      citationIssue: "问题说明",
+      openPmid: "打开 PMID {pmid}",
+      openDoi: "打开 DOI",
+      openSource: "打开来源",
+      runQueryId: "Query ID",
+      runStartTime: "开始时间",
+      runEndTime: "结束时间",
+      runTotalLatency: "总耗时",
+      runProvider: "Provider",
+      runModel: "模型",
+      runEvidenceStatus: "证据状态",
+      runConfidence: "置信度 / 校准",
+      runCorrectionPerformed: "是否执行校正",
+      runRawPreserved: "是否保留原始回答",
+      runRetrievedEvidence: "检索证据数",
+      runUsableEvidence: "可用证据数",
+      warningsNotes: "警告 / 备注",
+      viewRawResponse: "查看原始响应",
+    },
+  };
 
   document.addEventListener("DOMContentLoaded", initWorkspace);
 
@@ -57,7 +542,7 @@
     let citationSearch = "";
 
     refs.apiBaseInput.value = apiBase;
-    initAboutLanguage();
+    initUiLanguage();
     bindEvents();
     renderAll();
     checkConnection();
@@ -77,7 +562,7 @@
 
       refs.questionInput.addEventListener("input", renderRunControls);
       refs.clearButton.addEventListener("click", clearCurrentRun);
-      refs.copyQuestionButton.addEventListener("click", () => copyValue(refs.questionInput.value, "Question copied."));
+      refs.copyQuestionButton.addEventListener("click", () => copyValue(refs.questionInput.value, t("questionCopied")));
       refs.retryButton.addEventListener("click", () => {
         if (lastQuestion) refs.questionInput.value = lastQuestion;
         submitCurrentQuestion();
@@ -85,8 +570,8 @@
       refs.cancelButton.addEventListener("click", cancelCurrentRun);
 
       refs.aboutButton.addEventListener("click", scrollToAbout);
-      refs.aboutLangButtons.forEach((button) => {
-        button.addEventListener("click", () => setAboutLanguage(button.dataset.aboutLang));
+      refs.langButtons.forEach((button) => {
+        button.addEventListener("click", () => setUiLanguage(button.dataset.uiLang));
       });
       refs.readGuideCards.forEach((card) => {
         card.addEventListener("click", () => scrollToWorkspacePanel(card.dataset.readPanel));
@@ -167,30 +652,48 @@
       });
     }
 
-    function initAboutLanguage() {
-      setAboutLanguage(initialAboutLanguage(), { persist: false });
+    function initUiLanguage() {
+      setUiLanguage(initialUiLanguage(), { persist: false, render: false });
     }
 
-    function initialAboutLanguage() {
-      const storedLanguage = safeLocalStorageGet(ABOUT_LANGUAGE_STORAGE_KEY);
-      if (ABOUT_LANGUAGES.has(storedLanguage)) return storedLanguage;
+    function initialUiLanguage() {
+      const storedLanguage = safeLocalStorageGet(UI_LANGUAGE_STORAGE_KEY) ||
+        safeLocalStorageGet(LEGACY_ABOUT_LANGUAGE_STORAGE_KEY);
+      if (UI_LANGUAGES.has(storedLanguage)) return storedLanguage;
       const browserLanguage = (window.navigator.languages && window.navigator.languages[0]) ||
         window.navigator.language ||
         "en";
       return String(browserLanguage).toLowerCase().startsWith("zh") ? "zh" : "en";
     }
 
-    function setAboutLanguage(language, options) {
-      const nextLanguage = ABOUT_LANGUAGES.has(language) ? language : "en";
-      refs.aboutSection.dataset.aboutLanguage = nextLanguage;
-      refs.aboutLangButtons.forEach((button) => {
-        const isActive = button.dataset.aboutLang === nextLanguage;
+    function setUiLanguage(language, options) {
+      const nextLanguage = UI_LANGUAGES.has(language) ? language : "en";
+      currentUiLanguage = nextLanguage;
+      root.dataset.uiLanguage = nextLanguage;
+      document.documentElement.lang = nextLanguage === "zh" ? "zh-CN" : "en";
+      document.title = t("documentTitle");
+      refs.langButtons.forEach((button) => {
+        const isActive = button.dataset.uiLang === nextLanguage;
         button.classList.toggle("active", isActive);
         button.setAttribute("aria-pressed", isActive ? "true" : "false");
       });
+      applyStaticTranslations();
       if (!options || options.persist !== false) {
-        safeLocalStorageSet(ABOUT_LANGUAGE_STORAGE_KEY, nextLanguage);
+        safeLocalStorageSet(UI_LANGUAGE_STORAGE_KEY, nextLanguage);
       }
+      if (!options || options.render !== false) renderAll();
+    }
+
+    function applyStaticTranslations() {
+      root.querySelectorAll("[data-i18n]").forEach((element) => {
+        element.textContent = t(element.dataset.i18n);
+      });
+      root.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+        element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+      });
+      root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+        element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+      });
     }
 
     function scrollToAbout() {
@@ -222,7 +725,7 @@
       const question = refs.questionInput.value.trim();
       if (state.status === "running") return;
       if (!question) {
-        renderInlineError("Question must not be empty.");
+        renderInlineError(t("questionRequired"));
         refs.questionInput.focus();
         return;
       }
@@ -276,7 +779,7 @@
         });
         state = State.completeRun(state, payload, vm, completedAt);
         renderAll();
-        showToast("Verification completed.");
+        showToast(t("verificationCompleted"));
       } catch (error) {
         const info = userCancelled ? Api.buildErrorInfo("CANCELLED", null, null) : Api.errorInfoFromException(error);
         state = userCancelled ? State.cancelRun(state, new Date().toISOString()) : State.failRun(state, info, new Date().toISOString());
@@ -344,7 +847,7 @@
         normalized = Api.normalizeApiBase(refs.apiBaseInput.value);
         Api.buildApiUrl(normalized, Api.HEALTH_PATH);
       } catch (_error) {
-        renderSettingsMessage("API Base URL must be a valid http or https URL.", "error");
+        renderSettingsMessage(t("apiInvalid"), "error");
         return;
       }
       apiBase = normalized;
@@ -352,7 +855,7 @@
       refs.apiBaseInput.value = apiBase;
       state = State.clearRun();
       renderAll();
-      renderSettingsMessage("API Base URL saved. Existing run results were cleared.", "ok");
+      renderSettingsMessage(t("apiSaved"), "ok");
       checkConnection();
     }
 
@@ -362,7 +865,7 @@
       safeLocalStorageSet(Api.API_STORAGE_KEY, apiBase);
       state = State.clearRun();
       renderAll();
-      renderSettingsMessage("Default API Base URL restored.", "ok");
+      renderSettingsMessage(t("apiDefaultRestored"), "ok");
       checkConnection();
     }
 
@@ -391,16 +894,16 @@
 
     function renderQuestionHeader() {
       const vm = state.viewModel;
-      refs.taskTitle.textContent = vm ? vm.query.title : "Live evidence verification";
-      refs.topicTag.textContent = vm ? "Current run" : "Ready";
-      refs.modelTag.textContent = vm ? `${vm.provider} / ${vm.model}` : "Server-configured model";
+      refs.taskTitle.textContent = vm ? vm.query.title : t("taskTitleIdle");
+      refs.topicTag.textContent = vm ? t("currentRun") : t("ready");
+      refs.modelTag.textContent = vm ? `${vm.provider} / ${vm.model}` : t("serverConfiguredModel");
     }
 
     function renderRunControls() {
       const question = refs.questionInput.value.trim();
       const running = state.status === "running";
       refs.runButton.disabled = running || !question;
-      refs.runButton.textContent = running ? "Running verification..." : "Run verification";
+      refs.runButton.textContent = running ? t("runningVerification") : t("runVerification");
       refs.cancelButton.hidden = !running;
       refs.retryButton.hidden = running || !lastQuestion || state.status !== "failed";
       refs.copyQuestionButton.disabled = !question;
@@ -422,8 +925,8 @@
         const item = create("li", { className: `aw-stage aw-stage-${phase.status}` });
         item.append(
           create("span", { className: "aw-stage-icon", text: phaseIcon(phase.status), ariaHidden: "true" }),
-          create("span", { className: "aw-stage-label", text: phase.label }),
-          create("span", { className: "aw-stage-state", text: phase.status }),
+          create("span", { className: "aw-stage-label", text: phaseLabel(phase) }),
+          create("span", { className: "aw-stage-state", text: statusLabel(phase.status) }),
         );
         refs.pipeline.appendChild(item);
       });
@@ -433,20 +936,20 @@
       const vm = state.viewModel;
       const raw = state.rawAnswer;
       refs.summaryGrid.replaceChildren(
-        metric("Evidence status", vm ? vm.evidenceStatus : "-"),
-        metric("Confidence", vm && vm.confidence !== null ? vm.confidence : "-"),
-        metric("Citations", vm ? vm.metrics.citationCount : "-"),
-        metric("Total claims", vm ? vm.metrics.totalClaims : "-"),
-        metric("Supported claims", vm ? vm.metrics.supportedClaims : "-"),
-        metric("Corrected claims", vm ? vm.metrics.correctedClaims : "-"),
-        metric("Unsupported claims", vm ? vm.metrics.unsupportedClaims : "-"),
-        metric("Total latency", vm ? Adapter.formatLatency(vm.latency.totalMs || vm.latency.observedMs) : "-"),
+        metric(t("metricEvidenceStatus"), vm ? evidenceStatusLabel(vm.evidenceStatus) : "-"),
+        metric(t("metricConfidence"), vm && vm.confidence !== null ? vm.confidence : "-"),
+        metric(t("metricCitations"), vm ? vm.metrics.citationCount : "-"),
+        metric(t("metricTotalClaims"), vm ? vm.metrics.totalClaims : "-"),
+        metric(t("metricSupportedClaims"), vm ? vm.metrics.supportedClaims : "-"),
+        metric(t("metricCorrectedClaims"), vm ? vm.metrics.correctedClaims : "-"),
+        metric(t("metricUnsupportedClaims"), vm ? vm.metrics.unsupportedClaims : "-"),
+        metric(t("metricTotalLatency"), vm ? Adapter.formatLatency(vm.latency.totalMs || vm.latency.observedMs) : "-"),
       );
       refs.modelTag.textContent = vm
         ? `${vm.provider} / ${vm.model}`
         : raw
           ? `${Adapter.valueOrDash(raw.provider)} / ${Adapter.valueOrDash(raw.model)}`
-          : "Server-configured model";
+          : t("serverConfiguredModel");
     }
 
     function renderFrameworkChecks() {
@@ -456,7 +959,7 @@
       if (!checks.length) {
         refs.frameworkChecks.appendChild(create("p", {
           className: "aw-empty-inline",
-          text: "No structured framework checks were returned by the API.",
+          text: t("noFrameworkChecks"),
         }));
         return;
       }
@@ -464,7 +967,7 @@
         const button = create("button", {
           className: `aw-check-chip aw-check-${check.status.toLowerCase().replace(/\s+/g, "-")}`,
           type: "button",
-          text: `${check.label}: ${check.status}`,
+          text: `${check.label}: ${frameworkStatusLabel(check.status)}`,
         });
         button.addEventListener("click", () => {
           if (check.correctionId || check.claimId) focusCorrection(check.correctionId, check.claimId);
@@ -489,22 +992,22 @@
       replaceChildren(refs.keyCorrections);
       const title = create("div", { className: "aw-section-title-row" });
       title.append(
-        create("h2", { className: "aw-section-title", text: "Key corrections" }),
+        create("h2", { className: "aw-section-title", text: t("keyCorrections") }),
         create("button", {
           className: "aw-ghost-button",
           type: "button",
-          text: "Copy key corrections",
+          text: t("copyKeyCorrections"),
           onClick: () => copyCurrent("keyCorrections"),
         }),
       );
       refs.keyCorrections.appendChild(title);
 
       if (!vm) {
-        refs.keyCorrections.appendChild(create("p", { className: "aw-empty-inline", text: "Run a question to see material corrections." }));
+        refs.keyCorrections.appendChild(create("p", { className: "aw-empty-inline", text: t("runForCorrections") }));
         return;
       }
       if (!vm.keyCorrections.length) {
-        refs.keyCorrections.appendChild(create("p", { className: "aw-empty-inline", text: "No material correction was required." }));
+        refs.keyCorrections.appendChild(create("p", { className: "aw-empty-inline", text: t("noMaterialCorrection") }));
         return;
       }
       const list = create("div", { className: "aw-key-list" });
@@ -514,9 +1017,9 @@
           type: "button",
         });
         button.append(
-          create("span", { className: "aw-key-type", text: item.category }),
+          create("span", { className: "aw-key-type", text: categoryLabel(item.category) }),
           create("span", { className: "aw-key-summary", text: item.summary }),
-          create("span", { className: "aw-key-meta", text: `${item.severity} severity | ${item.claimId || "-"}` }),
+          create("span", { className: "aw-key-meta", text: t("keyMeta", { severity: severityLabel(item.severity), claimId: item.claimId || "-" }) }),
         );
         button.addEventListener("click", () => focusCorrection(item.id, item.claimId));
         list.appendChild(button);
@@ -530,10 +1033,10 @@
       replaceChildren(refs.rawMeta);
       refs.rawProvider.textContent = raw.provider || "-";
       refs.rawModel.textContent = raw.model || "-";
-      refs.rawVerification.textContent = raw.verificationStatus || "uncorrected";
+      refs.rawVerification.textContent = verificationStatusLabel(raw.verificationStatus || "uncorrected");
       refs.copyRawButton.disabled = !(vm || state.rawAnswer);
       const markers = vm ? rawMarkers(vm) : [];
-      const matched = renderMarkdown(refs.rawText, raw.text || "Raw answer has not been generated.", {
+      const matched = renderMarkdown(refs.rawText, raw.text || t("noRawAnswer"), {
         markers,
         onClaim: focusByClaimOnly,
         citations: vm ? vm.citations : [],
@@ -548,12 +1051,12 @@
       const flagged = vm.claims.filter((claim) => claim.verificationStatus !== "supported");
       const unmatched = flagged.filter((claim) => !matched.has(claim.id));
       if (!unmatched.length) return;
-      refs.flaggedClaims.appendChild(create("h3", { className: "aw-mini-heading", text: "Flagged claims" }));
+      refs.flaggedClaims.appendChild(create("h3", { className: "aw-mini-heading", text: t("flaggedClaims") }));
       unmatched.forEach((claim) => {
         const button = create("button", {
           className: `aw-flagged-claim aw-status-${safeClass(claim.verificationStatus)}`,
           type: "button",
-          text: `${claim.id} | ${claim.verificationStatus}: ${claim.text}`,
+          text: `${claim.id} | ${verificationStatusLabel(claim.verificationStatus)}: ${claim.text}`,
         });
         button.addEventListener("click", () => focusByClaimOnly(claim.id));
         refs.flaggedClaims.appendChild(button);
@@ -562,7 +1065,7 @@
 
     function renderCorrectedPanel() {
       const vm = state.viewModel;
-      refs.correctedEvidence.textContent = vm ? vm.evidenceStatus : "-";
+      refs.correctedEvidence.textContent = vm ? evidenceStatusLabel(vm.evidenceStatus) : "-";
       refs.correctedConfidence.textContent = vm && vm.confidence !== null ? String(vm.confidence) : "-";
       refs.copyCorrectedButton.disabled = !vm;
       refs.correctedModeButtons.forEach((button) => {
@@ -570,7 +1073,7 @@
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", active ? "true" : "false");
       });
-      const text = vm ? vm.correctedAnswer.text : "Anchor-corrected answer will appear after the run finishes.";
+      const text = vm ? vm.correctedAnswer.text : t("correctedPending");
       const markers = vm && state.correctedMode === "tracked" ? correctedMarkers(vm) : [];
       renderMarkdown(refs.correctedText, text, {
         markers,
@@ -583,10 +1086,10 @@
 
     function renderCorrectedReferences(vm) {
       replaceChildren(refs.correctedReferences);
-      const summary = create("summary", { text: `Corrected-version references (${vm ? vm.citations.length : 0})` });
+      const summary = create("summary", { text: t("correctedReferences", { count: vm ? vm.citations.length : 0 }) });
       refs.correctedReferences.appendChild(summary);
       if (!vm || !vm.citations.length) {
-        refs.correctedReferences.appendChild(create("p", { className: "aw-empty-inline", text: "No Anchor citations returned." }));
+        refs.correctedReferences.appendChild(create("p", { className: "aw-empty-inline", text: t("noAnchorCitations") }));
         return;
       }
       const list = create("ol", { className: "aw-reference-list" });
@@ -594,10 +1097,10 @@
         const item = create("li");
         appendText(item, `${citation.id}: ${citation.title} | ${citation.source || citation.journal} | `);
         if (citation.href) {
-          const link = safeLink(citation.href, citation.pmid ? `PMID ${citation.pmid}` : citation.doi ? `DOI ${citation.doi}` : "Source");
+          const link = safeLink(citation.href, citation.pmid ? `PMID ${citation.pmid}` : citation.doi ? `DOI ${citation.doi}` : t("citationSource"));
           item.appendChild(link);
         } else {
-          appendText(item, "No external link");
+          appendText(item, t("noExternalLink"));
         }
         list.appendChild(item);
       });
@@ -627,20 +1130,20 @@
       refs.correctionSearch.value = correctionSearch;
 
       if (!vm) {
-        refs.correctionsSummary.appendChild(create("p", { className: "aw-empty-inline", text: "No run yet." }));
-        refs.correctionsList.appendChild(emptyBlock("No correction records were returned for this run."));
+        refs.correctionsSummary.appendChild(create("p", { className: "aw-empty-inline", text: t("noRunCorrections") }));
+        refs.correctionsList.appendChild(emptyBlock(t("noCorrectionReturned")));
         return;
       }
 
       refs.correctionsSummary.append(
-        smallStat("Supported", vm.metrics.supportedClaims),
-        smallStat("Corrected", vm.metrics.correctedClaims),
-        smallStat("Unsupported", vm.metrics.unsupportedClaims),
+        smallStat(t("statSupported"), vm.metrics.supportedClaims),
+        smallStat(t("statCorrected"), vm.metrics.correctedClaims),
+        smallStat(t("statUnsupported"), vm.metrics.unsupportedClaims),
       );
 
       const corrections = filteredCorrections(vm.corrections);
       if (!corrections.length) {
-        refs.correctionsList.appendChild(emptyBlock("No correction records match the current filters."));
+        refs.correctionsList.appendChild(emptyBlock(t("noCorrectionMatches")));
         return;
       }
 
@@ -653,18 +1156,18 @@
         details.open = correction.material || vm.corrections.length <= 3;
         const summary = create("summary", { className: "aw-correction-summary" });
         summary.append(
-          create("span", { className: "aw-category-chip", text: correction.category }),
-          create("span", { className: `aw-severity-chip aw-severity-${correction.severity}`, text: correction.severity }),
-          create("span", { className: "aw-correction-title", text: `${correction.claimId || "-"} | ${correction.verificationStatus}` }),
+          create("span", { className: "aw-category-chip", text: categoryLabel(correction.category) }),
+          create("span", { className: `aw-severity-chip aw-severity-${correction.severity}`, text: severityLabel(correction.severity) }),
+          create("span", { className: "aw-correction-title", text: `${correction.claimId || "-"} | ${verificationStatusLabel(correction.verificationStatus)}` }),
         );
         details.appendChild(summary);
         details.append(
-          correctionRow("Model said", correction.originalClaim),
-          correctionRow("Verified", correction.correctedClaim || correction.originalClaim || "-"),
-          correctionRow("Why", correction.reason),
-          correctionRow("Supporting evidence", correction.supportingEvidenceIds.join(", ") || "-"),
-          correctionRow("Citation links", correction.citationIds.join(", ") || "-"),
-          correctionRow("Verification status", correction.verificationStatus),
+          correctionRow(t("correctionModelSaid"), correction.originalClaim),
+          correctionRow(t("correctionVerified"), correction.correctedClaim || correction.originalClaim || "-"),
+          correctionRow(t("correctionWhy"), correction.reason),
+          correctionRow(t("correctionEvidence"), correction.supportingEvidenceIds.join(", ") || "-"),
+          correctionRow(t("correctionCitations"), correction.citationIds.join(", ") || "-"),
+          correctionRow(t("correctionStatus"), verificationStatusLabel(correction.verificationStatus)),
         );
         details.addEventListener("toggle", () => {
           if (details.open) highlightLinked(correction.claimId, correction.id);
@@ -682,12 +1185,12 @@
       refs.citationFilter.value = citationFilter;
       refs.citationSearch.value = citationSearch;
       if (!vm) {
-        refs.citationsList.appendChild(emptyBlock("No citation records were returned for this run."));
+        refs.citationsList.appendChild(emptyBlock(t("noCitationReturned")));
         return;
       }
       const citations = filteredCitations(vm.citations);
       if (!citations.length) {
-        refs.citationsList.appendChild(emptyBlock("No citation records match the current filters."));
+        refs.citationsList.appendChild(emptyBlock(t("noCitationMatches")));
         return;
       }
       citations.forEach((citation) => {
@@ -698,22 +1201,22 @@
         const head = create("div", { className: "aw-citation-head" });
         head.append(
           create("strong", { text: citation.id }),
-          create("span", { className: "aw-citation-status", text: citation.verificationStatus }),
+          create("span", { className: "aw-citation-status", text: verificationStatusLabel(citation.verificationStatus) }),
         );
         card.appendChild(head);
         card.append(
-          citationRow("Evidence ID", citation.evidenceId),
-          citationRow("Title", citation.title),
-          citationRow("Source", citation.source || citation.journal),
-          citationRow("Authors", citation.authors),
-          citationRow("Year", citation.year),
-          citationRow("PMID", citation.pmid || "-"),
-          citationRow("DOI", citation.doi || "-"),
-          citationRow("Used by corrections", citation.usedByCorrectionIds.join(", ") || "-"),
-          citationRow("Issue", citation.issue),
+          citationRow(t("citationEvidenceId"), citation.evidenceId),
+          citationRow(t("citationTitle"), citation.title),
+          citationRow(t("citationSource"), citation.source || citation.journal),
+          citationRow(t("citationAuthors"), citation.authors),
+          citationRow(t("citationYear"), citation.year),
+          citationRow(t("citationPmid"), citation.pmid || "-"),
+          citationRow(t("citationDoi"), citation.doi || "-"),
+          citationRow(t("citationUsedBy"), citation.usedByCorrectionIds.join(", ") || "-"),
+          citationRow(t("citationIssue"), citationIssueLabel(citation.issue)),
         );
         if (citation.href) {
-          const link = safeLink(citation.href, citation.pmid ? `Open PMID ${citation.pmid}` : citation.doi ? "Open DOI" : "Open source");
+          const link = safeLink(citation.href, citation.pmid ? t("openPmid", { pmid: citation.pmid }) : citation.doi ? t("openDoi") : t("openSource"));
           link.className = "aw-link-button";
           card.appendChild(link);
         }
@@ -726,32 +1229,32 @@
       const vm = state.viewModel;
       replaceChildren(refs.runDetails);
       if (!vm) {
-        refs.runDetails.appendChild(emptyBlock("Run details will appear after a response is returned."));
+        refs.runDetails.appendChild(emptyBlock(t("noRunDetails")));
         return;
       }
       const details = vm.runDetails;
       refs.runDetails.append(
         keyValueGrid([
-          ["Query ID", vm.queryId],
-          ["Start time", details.startTime],
-          ["End time", details.endTime],
-          ["Total latency", Adapter.formatLatency(vm.latency.totalMs || vm.latency.observedMs)],
-          ["Provider", details.provider],
-          ["Model", details.model],
-          ["Evidence status", details.evidenceStatus],
-          ["Confidence / calibration", vm.confidence === null ? "-" : vm.confidence],
-          ["Correction performed", details.correctionPerformed],
-          ["Raw answer preserved", details.rawAnswerPreserved],
-          ["Retrieved evidence count", details.retrievedEvidenceCount],
-          ["Usable evidence count", details.usableEvidenceCount],
+          [t("runQueryId"), vm.queryId],
+          [t("runStartTime"), details.startTime],
+          [t("runEndTime"), details.endTime],
+          [t("runTotalLatency"), Adapter.formatLatency(vm.latency.totalMs || vm.latency.observedMs)],
+          [t("runProvider"), details.provider],
+          [t("runModel"), details.model],
+          [t("runEvidenceStatus"), evidenceStatusLabel(details.evidenceStatus)],
+          [t("runConfidence"), vm.confidence === null ? "-" : vm.confidence],
+          [t("runCorrectionPerformed"), booleanLabel(details.correctionPerformed)],
+          [t("runRawPreserved"), booleanLabel(details.rawAnswerPreserved)],
+          [t("runRetrievedEvidence"), details.retrievedEvidenceCount],
+          [t("runUsableEvidence"), details.usableEvidenceCount],
         ]),
         stageEventList(details.stageEvents),
-        notesBlock("Warnings / notes", details.warnings),
+        notesBlock(t("warningsNotes"), details.warnings),
       );
       if (isDebugMode()) {
         const rawDetails = create("details", { className: "aw-debug-details" });
         rawDetails.append(
-          create("summary", { text: "View raw response" }),
+          create("summary", { text: t("viewRawResponse") }),
           create("pre", { text: JSON.stringify(vm.rawPayload, null, 2) }),
         );
         refs.runDetails.appendChild(rawDetails);
@@ -773,7 +1276,7 @@
       replaceChildren(refs.settingsStatus);
       refs.settingsStatus.appendChild(create("p", {
         className: `aw-settings-state aw-settings-${connection.status}`,
-        text: `Connection: ${connectionLabel(connection.status)}`,
+        text: t("connectionPrefix", { status: connectionLabel(connection.status) }),
       }));
       if (connection.error) {
         refs.settingsStatus.appendChild(create("p", { className: "aw-error-text", text: connection.error.message }));
@@ -781,7 +1284,7 @@
       const deps = connection.dependencies || {};
       const list = create("div", { className: "aw-dependency-grid" });
       ["database", "retrieval", "llm", "configuration"].forEach((key) => {
-        list.appendChild(create("span", { className: "aw-dependency-chip", text: `${key}: ${deps[key] || "-"}` }));
+        list.appendChild(create("span", { className: "aw-dependency-chip", text: `${dependencyLabel(key)}: ${dependencyStatusLabel(deps[key])}` }));
       });
       refs.settingsStatus.appendChild(list);
     }
@@ -794,7 +1297,7 @@
 
     function renderInlineError(message) {
       refs.errorBox.hidden = false;
-      refs.errorBox.textContent = message || "The request failed.";
+      refs.errorBox.textContent = message || t("requestFailed");
     }
 
     function clearInlineError() {
@@ -803,24 +1306,24 @@
     }
 
     function statusText() {
-      if (state.status === "idle") return "Idle";
-      if (state.status === "running") return "Server processing. Results will update as real stream events arrive.";
-      if (state.status === "completed") return "Completed";
-      if (state.status === "failed" && state.error) return `${state.error.code || "FAILED"}: ${state.error.message || "Request failed"}`;
+      if (state.status === "idle") return t("idle");
+      if (state.status === "running") return t("serverProcessing");
+      if (state.status === "completed") return t("completed");
+      if (state.status === "failed" && state.error) return `${state.error.code || "FAILED"}: ${state.error.message || t("failedFallback")}`;
       return state.status;
     }
 
     function copyCurrent(kind) {
       const vm = state.viewModel;
-      if (kind === "raw") return copyValue(vm && vm.rawAnswer ? vm.rawAnswer.text : "", "Raw answer copied.");
-      if (kind === "corrected") return copyValue(vm && vm.correctedAnswer ? vm.correctedAnswer.text : "", "Corrected answer copied.");
-      if (kind === "queryId") return copyValue(vm ? vm.queryId : "", "Query ID copied.");
-      if (kind === "runDetails") return copyValue(vm ? JSON.stringify(Exporter.buildAuditJson(vm).run_details, null, 2) : "", "Run details copied.");
+      if (kind === "raw") return copyValue(vm && vm.rawAnswer ? vm.rawAnswer.text : "", t("rawCopied"));
+      if (kind === "corrected") return copyValue(vm && vm.correctedAnswer ? vm.correctedAnswer.text : "", t("correctedCopied"));
+      if (kind === "queryId") return copyValue(vm ? vm.queryId : "", t("queryIdCopied"));
+      if (kind === "runDetails") return copyValue(vm ? JSON.stringify(Exporter.buildAuditJson(vm).run_details, null, 2) : "", t("runDetailsCopied"));
       if (kind === "keyCorrections") {
         const text = vm && vm.keyCorrections.length
           ? vm.keyCorrections.map((item) => `${item.category} (${item.severity}): ${item.summary} [${item.claimId || "-"}]`).join("\n")
-          : "No material correction was required.";
-        return copyValue(text, "Key corrections copied.");
+          : t("materialCorrectionFallback");
+        return copyValue(text, t("keyCorrectionsCopied"));
       }
       return Promise.resolve(false);
     }
@@ -828,7 +1331,7 @@
     async function copyValue(value, successMessage) {
       const text = String(value || "").trim();
       if (!text) {
-        showToast("Nothing to copy.");
+        showToast(t("nothingToCopy"));
         return false;
       }
       let ok = false;
@@ -837,32 +1340,32 @@
       } catch (_error) {
         ok = false;
       }
-      showToast(ok ? successMessage : "Copy is unavailable in this browser.");
+      showToast(ok ? successMessage : t("copyUnavailable"));
       return ok;
     }
 
     function exportMarkdown() {
       const vm = state.viewModel;
       if (!vm) {
-        showToast("Run a question before exporting.");
+        showToast(t("runBeforeExport"));
         return;
       }
       const text = Exporter.buildMarkdownReport(vm);
       const filename = Exporter.makeReportFilename(vm, "md");
       Exporter.downloadText(filename, text, "text/markdown;charset=utf-8");
-      showToast("Markdown report exported.");
+      showToast(t("markdownExported"));
     }
 
     function exportJson() {
       const vm = state.viewModel;
       if (!vm) {
-        showToast("Run a question before exporting.");
+        showToast(t("runBeforeExport"));
         return;
       }
       const text = JSON.stringify(Exporter.buildAuditJson(vm), null, 2);
       const filename = Exporter.makeReportFilename(vm, "json");
       Exporter.downloadText(filename, text, "application/json;charset=utf-8");
-      showToast("Audit JSON exported.");
+      showToast(t("auditJsonExported"));
     }
 
     function focusCorrection(correctionId, claimId) {
@@ -1024,7 +1527,7 @@
       keyCorrections: required(root, "#aw-key-corrections"),
       aboutButton: required(root, "#aw-about-button"),
       aboutSection: required(root, "#aw-about"),
-      aboutLangButtons: Array.from(root.querySelectorAll(".aw-lang-button")),
+      langButtons: Array.from(root.querySelectorAll(".aw-lang-button")),
       readGuideCards: Array.from(root.querySelectorAll(".aw-read-card")),
       panelTabs: Array.from(root.querySelectorAll(".aw-panel-tab")),
       workspacePanels: Array.from(root.querySelectorAll(".aw-workspace-panel")),
@@ -1125,7 +1628,7 @@
       container.appendChild(paragraph);
     }
     if (!container.childNodes.length) {
-      container.appendChild(create("p", { className: "aw-empty-inline", text: "No text returned." }));
+      container.appendChild(create("p", { className: "aw-empty-inline", text: t("noTextReturned") }));
     }
     return matched;
   }
@@ -1268,7 +1771,7 @@
 
   function normalizeRawDuringStream(raw) {
     return {
-      text: raw && raw.text ? raw.text : "Raw answer has not been generated.",
+      text: raw && raw.text ? raw.text : t("noRawAnswer"),
       provider: raw && raw.provider ? raw.provider : "-",
       model: raw && raw.model ? raw.model : "-",
       verificationStatus: raw && raw.verification_status ? raw.verification_status : "uncorrected",
@@ -1309,9 +1812,9 @@
 
   function stageEventList(events) {
     const details = create("details", { className: "aw-run-notes" });
-    details.appendChild(create("summary", { text: "Observed stage events" }));
+    details.appendChild(create("summary", { text: t("observedStageEvents") }));
     if (!Array.isArray(events) || !events.length) {
-      details.appendChild(create("p", { className: "aw-empty-inline", text: "No streaming stage events were observed." }));
+      details.appendChild(create("p", { className: "aw-empty-inline", text: t("noStageEvents") }));
       return details;
     }
     const list = create("ol");
@@ -1326,7 +1829,7 @@
     const details = create("details", { className: "aw-run-notes" });
     details.appendChild(create("summary", { text: title }));
     if (!Array.isArray(notes) || !notes.length) {
-      details.appendChild(create("p", { className: "aw-empty-inline", text: "None returned." }));
+      details.appendChild(create("p", { className: "aw-empty-inline", text: t("noneReturned") }));
       return details;
     }
     const list = create("ul");
@@ -1350,10 +1853,9 @@
   }
 
   function populateSelect(select, values, selected) {
-    if (select.options.length === values.length) return;
     replaceChildren(select);
     values.forEach((value) => {
-      const option = create("option", { text: value });
+      const option = create("option", { text: optionLabel(value) });
       option.value = value;
       option.selected = value === selected;
       select.appendChild(option);
@@ -1369,10 +1871,92 @@
   }
 
   function connectionLabel(status) {
-    if (status === "connected") return "Connected";
-    if (status === "degraded") return "Degraded";
-    if (status === "disconnected") return "Disconnected";
-    return "Checking";
+    if (status === "connected") return t("connectionConnected");
+    if (status === "degraded") return t("connectionDegraded");
+    if (status === "disconnected") return t("connectionDisconnected");
+    return t("connectionChecking");
+  }
+
+  function phaseLabel(phase) {
+    const key = phase && phase.key;
+    if (key === "raw_generation") return t("stageRaw");
+    if (key === "retrieval") return t("stageRetrieval");
+    if (key === "claim_extraction") return t("stageExtraction");
+    if (key === "verification") return t("stageVerification");
+    if (key === "correction") return t("stageCorrection");
+    return phase && phase.label ? phase.label : "-";
+  }
+
+  function statusLabel(status) {
+    if (status === "pending") return t("statusPending");
+    if (status === "running") return t("statusRunning");
+    if (status === "completed") return t("statusCompleted");
+    if (status === "failed") return t("statusFailed");
+    if (status === "skipped") return t("statusSkipped");
+    return status || "-";
+  }
+
+  function optionLabel(value) {
+    return enumLabel("option", value);
+  }
+
+  function categoryLabel(value) {
+    return enumLabel("option", value);
+  }
+
+  function verificationStatusLabel(value) {
+    return enumLabel("verification", value);
+  }
+
+  function evidenceStatusLabel(value) {
+    return enumLabel("evidence", value);
+  }
+
+  function frameworkStatusLabel(value) {
+    return enumLabel("framework_status", value);
+  }
+
+  function severityLabel(value) {
+    return enumLabel("severity", value);
+  }
+
+  function dependencyLabel(value) {
+    return enumLabel("dependency", value);
+  }
+
+  function dependencyStatusLabel(value) {
+    return enumLabel("dependency_status", value);
+  }
+
+  function citationIssueLabel(value) {
+    if (value === "Citation metadata is incomplete in the API response.") {
+      return t("citationIncompleteIssue");
+    }
+    return value || "-";
+  }
+
+  function booleanLabel(value) {
+    if (value === true) return t("boolTrue");
+    if (value === false) return t("boolFalse");
+    return value === null || value === undefined ? "-" : String(value);
+  }
+
+  function enumLabel(prefix, value) {
+    if (value === null || value === undefined || value === "") return "-";
+    const raw = String(value);
+    const key = `${prefix}.${raw.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`;
+    const translated = t(key);
+    return translated === key ? raw : translated;
+  }
+
+  function t(key, params) {
+    const source = UI_TEXT[currentUiLanguage] || UI_TEXT.en;
+    const fallback = UI_TEXT.en;
+    const raw = source[key] || fallback[key] || key;
+    return String(raw).replace(/\{([^}]+)\}/g, (_match, name) => {
+      const value = params && Object.prototype.hasOwnProperty.call(params, name) ? params[name] : "";
+      return value === null || value === undefined ? "" : String(value);
+    });
   }
 
   function safeClass(value) {
