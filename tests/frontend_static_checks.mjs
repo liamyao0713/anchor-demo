@@ -19,9 +19,9 @@ const workspaceAdapter = require("../workspace-adapter.js");
 const workspaceState = require("../workspace-state.js");
 const workspaceExport = require("../workspace-export.js");
 
-assert.match(html, /live-chat\.css/, "index.html must load live-chat.css");
-assert.match(html, /live-chat\.js/, "index.html must load live-chat.js");
-assert.match(html, /id="anchor-live-chat"/, "live chat panel must exist");
+assert.doesNotMatch(html, /live-chat\.css/, "clean workspace entry must not load legacy live-chat.css");
+assert.doesNotMatch(html, /live-chat\.js/, "clean workspace entry must not load legacy live-chat.js");
+assert.doesNotMatch(html, /id="anchor-live-chat"/, "clean workspace entry must not include the legacy live chat panel");
 assert.match(html, /id="anchor-workspace"/, "Evidence Verification Workspace must exist");
 assert.match(html, /Evidence Verification Workspace/, "new product bar must name the workspace");
 assert.match(html, /id="aw-settings-panel"/, "API configuration must live in settings");
@@ -31,18 +31,17 @@ assert.match(html, /data-audit-tab="citations"/, "C panel must include Citations
 assert.match(html, /data-audit-tab="run-details"/, "C panel must include Run details tab");
 assert.match(html, /id="aw-export-markdown"/, "workspace must export Markdown");
 assert.match(html, /id="aw-export-json"/, "workspace must export audit JSON");
-assert.match(html, /id="live-question"/, "question textarea must exist");
-assert.match(html, /id="live-send"/, "Send button must exist");
-assert.match(html, /id="live-retry"/, "Retry button must exist");
-assert.match(html, /data-live-state="idle"/, "live chat must start with idle state");
-assert.match(html, /id="live-corrected-meta"/, "Corrected Answer area must show summary metadata");
-assert.match(html, /id="live-corrected-citations"/, "Corrected Answer area must show citations");
-assert.match(html, /Uncorrected AI Answer/, "Raw Answer area must be explicitly uncorrected");
-assert.match(html, /Not Anchor-verified/, "Raw Answer must be visibly marked not Anchor-verified");
-assert.match(html, /Anchor Corrected Answer/, "Corrected Answer area must remain separate");
-assert.match(html, /Audit \/ Difference \/ Citations/, "Audit area must remain separate");
-assert.match(html, /Anchor KB 当前主要覆盖呼吸医学/, "live chat must disclose the respiratory medicine KB scope");
-assert.match(html, /respiratory medicine/, "live chat must disclose the KB scope in English");
+assert.match(html, /id="aw-question"/, "workspace question textarea must exist");
+assert.match(html, /id="aw-run"/, "workspace run button must exist");
+assert.match(html, /id="aw-retry"/, "workspace retry button must exist");
+assert.match(html, /Uncorrected answer/, "Raw Answer area must be explicitly uncorrected");
+assert.match(html, /Anchor-corrected answer/, "Corrected Answer area must remain separate");
+assert.match(html, /Audit \/ Differences \/ Citations/, "Audit area must remain separate");
+assert.match(html, /respiratory medicine/, "workspace must disclose the KB scope in English");
+assert.doesNotMatch(html, /DeepSeek v4 Pro|Gemini 3 Flash|OpenEvidence|ChatGPT 5\.5|Claude 4\.7/, "workspace entry must not hardcode model selectors");
+assert.doesNotMatch(html, /Case 1|Case 2|Case 3|Case 4|Case 5|Case 6/, "workspace entry must not include legacy hardcoded demo cases");
+assert.doesNotMatch(html, /PMID\s+\d{6,}/, "workspace entry must not hardcode medical citations");
+assert.doesNotMatch(html, /system prompt v1\.5/i, "workspace entry must not expose legacy prompts");
 
 assert.match(js, /\/api\/chat\/stream/, "frontend must prefer the streaming chat API");
 assert.match(js, /\/api\/chat/, "frontend must keep /api/chat fallback");
@@ -69,19 +68,7 @@ assert.match(workspaceCss, /@media \(max-width: 768px\)/, "workspace must define
 assert.match(workspaceCss, /overflow-y:\s*auto/, "workspace panels must scroll internally");
 assert.match(workspaceCss, /\.aw-workspace-panel\s*\{[\s\S]*height:\s*var\(--aw-panel-height\)/, "workspace panels must use a fixed height");
 assert.match(workspaceCss, /\.aw-workspace-panel\s*\{[\s\S]*max-height:\s*var\(--aw-panel-height\)/, "workspace panels must not expand past the fixed height");
-assert.match(html, /--v7-panel-body-height/, "static A/B/C panels must use fixed body heights");
-assert.match(
-  html,
-  /\.v7-col-body\{height:var\(--v7-panel-body-height\);overflow-y:auto;overscroll-behavior:contain/,
-  "static A/B/C panel text must scroll inside fixed boxes",
-);
-assert.doesNotMatch(html, /Math\.min\(min,\s*cap\)/, "A/B/C panels must not resize to content height");
-assert.match(css, /--v7-panel-body-height/, "live A/B/C panels must set a fixed body height");
-assert.match(
-  css,
-  /\.live-col \.v7-col-body\s*\{[\s\S]*height: var\(--v7-panel-body-height\);[\s\S]*overflow-y: auto;[\s\S]*overscroll-behavior: contain;/,
-  "live A/B/C panel text must scroll inside fixed boxes",
-);
+assert.doesNotMatch(html, /--v7-panel-body-height|v7-col-body|setModel\(|setPage\(/, "workspace entry must not include legacy static demo behavior");
 assert.match(js, /corrected claims/, "Corrected Answer area must expose corrected claim count");
 assert.match(js, /errorInfoFromHttp/, "frontend must classify HTTP errors");
 assert.match(js, /errorInfoFromException/, "frontend must classify network and timeout errors");
@@ -100,7 +87,7 @@ assert.match(workspaceUiJs, /textContent/, "workspace rendering must use textCon
 assert.match(workspaceApiJs, /AbortController|signal/, "workspace API client must support request cancellation");
 assert.match(workspaceAdapterJs, /normalizeResponse/, "workspace must centralize API response adaptation");
 
-const publicBundle = `${html}\n${css}\n${js}\n${workspaceBundle}`;
+const publicBundle = `${html}\n${workspaceBundle}`;
 assert.doesNotMatch(publicBundle, /OPENAI_API_KEY/, "frontend must not expose OpenAI env names");
 assert.doesNotMatch(publicBundle, /ANCHOR_DB_PATH/, "frontend must not expose database config names");
 assert.doesNotMatch(publicBundle, /\bsk-[A-Za-z0-9_-]{12,}/, "frontend must not contain API keys");
