@@ -7,11 +7,30 @@ const require = createRequire(import.meta.url);
 const html = readFileSync("index.html", "utf8");
 const css = readFileSync("live-chat.css", "utf8");
 const js = readFileSync("live-chat.js", "utf8");
+const workspaceCss = readFileSync("workspace.css", "utf8");
+const workspaceApiJs = readFileSync("workspace-api.js", "utf8");
+const workspaceAdapterJs = readFileSync("workspace-adapter.js", "utf8");
+const workspaceStateJs = readFileSync("workspace-state.js", "utf8");
+const workspaceExportJs = readFileSync("workspace-export.js", "utf8");
+const workspaceUiJs = readFileSync("workspace-ui.js", "utf8");
 const liveChat = require("../live-chat.js");
+const workspaceApi = require("../workspace-api.js");
+const workspaceAdapter = require("../workspace-adapter.js");
+const workspaceState = require("../workspace-state.js");
+const workspaceExport = require("../workspace-export.js");
 
 assert.match(html, /live-chat\.css/, "index.html must load live-chat.css");
 assert.match(html, /live-chat\.js/, "index.html must load live-chat.js");
 assert.match(html, /id="anchor-live-chat"/, "live chat panel must exist");
+assert.match(html, /id="anchor-workspace"/, "Evidence Verification Workspace must exist");
+assert.match(html, /Evidence Verification Workspace/, "new product bar must name the workspace");
+assert.match(html, /id="aw-settings-panel"/, "API configuration must live in settings");
+assert.match(html, /id="aw-pipeline"/, "workspace must render pipeline status");
+assert.match(html, /data-audit-tab="corrections"/, "C panel must include Corrections tab");
+assert.match(html, /data-audit-tab="citations"/, "C panel must include Citations tab");
+assert.match(html, /data-audit-tab="run-details"/, "C panel must include Run details tab");
+assert.match(html, /id="aw-export-markdown"/, "workspace must export Markdown");
+assert.match(html, /id="aw-export-json"/, "workspace must export audit JSON");
 assert.match(html, /id="live-question"/, "question textarea must exist");
 assert.match(html, /id="live-send"/, "Send button must exist");
 assert.match(html, /id="live-retry"/, "Retry button must exist");
@@ -43,6 +62,11 @@ assert.match(js, /completed/, "frontend must model completed state");
 assert.match(js, /failed/, "frontend must model failed state");
 assert.match(css, /live-phase-track/, "frontend must style the live phase tracker");
 assert.match(css, /live-scope-note/, "frontend must style the KB scope note");
+assert.match(workspaceCss, /--aw-bg:\s*#f4f7fb/i, "workspace must use design tokens");
+assert.match(workspaceCss, /aw-workspace-grid/, "workspace must style the three-panel grid");
+assert.match(workspaceCss, /grid-template-columns:\s*minmax\(0,\s*32fr\) minmax\(0,\s*34fr\) minmax\(0,\s*34fr\)/, "desktop panels must use the requested proportions");
+assert.match(workspaceCss, /@media \(max-width: 768px\)/, "workspace must define mobile panel tabs");
+assert.match(workspaceCss, /overflow-y:\s*auto/, "workspace panels must scroll internally");
 assert.match(html, /--v7-panel-body-height/, "static A/B/C panels must use fixed body heights");
 assert.match(
   html,
@@ -66,7 +90,15 @@ assert.match(js, /setBusy\(sendButton, retryButton, true\)/, "frontend must disa
 assert.match(js, /setBusy\(sendButton, retryButton, false\)/, "frontend must restore buttons after completion/failure");
 assert.doesNotMatch(js, /innerHTML\s*=/, "API/model output must not be rendered through innerHTML assignment");
 
-const publicBundle = `${html}\n${css}\n${js}`;
+const workspaceBundle = `${workspaceCss}\n${workspaceApiJs}\n${workspaceAdapterJs}\n${workspaceStateJs}\n${workspaceExportJs}\n${workspaceUiJs}`;
+assert.doesNotMatch(workspaceBundle, /innerHTML\s*=/, "workspace must not render untrusted model output through innerHTML assignment");
+assert.doesNotMatch(workspaceBundle, /\balert\s*\(/, "workspace must use toast feedback rather than alert");
+assert.match(workspaceUiJs, /renderMarkdown/, "workspace must safely render Markdown through DOM nodes");
+assert.match(workspaceUiJs, /textContent/, "workspace rendering must use textContent for untrusted text");
+assert.match(workspaceApiJs, /AbortController|signal/, "workspace API client must support request cancellation");
+assert.match(workspaceAdapterJs, /normalizeResponse/, "workspace must centralize API response adaptation");
+
+const publicBundle = `${html}\n${css}\n${js}\n${workspaceBundle}`;
 assert.doesNotMatch(publicBundle, /OPENAI_API_KEY/, "frontend must not expose OpenAI env names");
 assert.doesNotMatch(publicBundle, /ANCHOR_DB_PATH/, "frontend must not expose database config names");
 assert.doesNotMatch(publicBundle, /\bsk-[A-Za-z0-9_-]{12,}/, "frontend must not contain API keys");
@@ -149,6 +181,132 @@ assert.deepEqual(
   }),
   ["EV_1", "EV_2", "EV_3"],
 );
+
+assert.equal(workspaceApi.normalizeApiBase("https://api.882498.xyz/"), "https://api.882498.xyz");
+assert.equal(workspaceApi.buildApiUrl("https://api.882498.xyz/", "/ready"), "https://api.882498.xyz/ready");
+assert.equal(workspaceApi.readinessStatus({ status: "ok" }, { status: "ready", dependencies: { database: "ok", llm: "configured" } }), "connected");
+assert.equal(workspaceApi.readinessStatus({ status: "ok" }, { status: "ready", dependencies: { database: "error" } }), "degraded");
+assert.equal(workspaceApi.errorInfoFromHttp(429, {}).code, "RATE_LIMITED");
+
+const samplePayload = {
+  query_id: "query-123",
+  question: "Does treatment help?",
+  raw_answer: {
+    text: "Mock claim needing weaker wording. Unsupported citation claim.",
+    provider: "mock-provider",
+    model: "mock-model",
+    grounded_by_anchor: false,
+    verification_status: "uncorrected",
+  },
+  corrected_answer: {
+    text: "Mock claim may be appropriate in selected patients. [citation-1]",
+    evidence_status: "partial",
+  },
+  confidence: null,
+  latency_ms: 1234,
+  claims: [
+    {
+      claim_id: "claim_1",
+      text: "Mock claim needing weaker wording",
+      type: "treatment",
+      verification_status: "partially_supported",
+      supporting_evidence_ids: ["EV_1"],
+    },
+    {
+      claim_id: "claim_2",
+      text: "Unsupported citation claim",
+      type: "citation",
+      verification_status: "unsupported",
+      supporting_evidence_ids: [],
+    },
+  ],
+  corrections: [
+    {
+      correction_id: "correction-1",
+      original_claim: "Mock claim needing weaker wording",
+      corrected_claim: "Mock claim may be appropriate in selected patients",
+      verification_status: "partially_supported",
+      correction_reason: "Anchor evidence supports a narrower statement.",
+      supporting_evidence_ids: ["EV_1"],
+      citation_ids: ["citation-1"],
+    },
+    {
+      correction_id: "correction-2",
+      original_claim: "Unsupported citation claim",
+      corrected_claim: null,
+      verification_status: "unsupported",
+      correction_reason: "PMID reference was not supported by retrieved Anchor evidence.",
+      citation_ids: [],
+    },
+  ],
+  citations: [
+    {
+      citation_id: "citation-1",
+      evidence_id: "EV_1",
+      title: "Mock evidence",
+      source: "Anchor KB",
+      pmid: "12345678",
+      doi: "10.1000/mock",
+    },
+  ],
+  audit: {
+    raw_answer_preserved: true,
+    correction_performed: true,
+    evidence_status: "partial",
+    notes: ["real note from API"],
+  },
+};
+
+const vm = workspaceAdapter.normalizeResponse(samplePayload, {
+  startedAt: "2026-08-25T00:00:00.000Z",
+  completedAt: "2026-08-25T00:00:02.000Z",
+  observedLatencyMs: 2000,
+  stageEvents: [{ stage: "raw_generation", observedAt: "2026-08-25T00:00:00.500Z" }],
+});
+assert.equal(vm.queryId, "query-123");
+assert.equal(vm.provider, "mock-provider");
+assert.equal(vm.model, "mock-model");
+assert.equal(vm.evidenceStatus, "partial");
+assert.equal(vm.metrics.totalClaims, 2);
+assert.equal(vm.metrics.supportedClaims, 0);
+assert.equal(vm.metrics.correctedClaims, 2);
+assert.equal(vm.metrics.unsupportedClaims, 1);
+assert.equal(vm.corrections[0].category, "partial support");
+assert.equal(vm.corrections[1].category, "wrong citation");
+assert.equal(vm.corrections[1].severity, "high");
+assert.equal(vm.citations[0].href, "https://pubmed.ncbi.nlm.nih.gov/12345678/");
+assert.equal(workspaceAdapter.citationHref({ pmid: "not-a-pmid", doi: "10.1000/abc" }), "https://doi.org/10.1000/abc");
+assert.equal(workspaceAdapter.citationHref({ url: "javascript:alert(1)" }), null);
+
+const missingVm = workspaceAdapter.normalizeResponse({});
+assert.equal(missingVm.rawAnswer.text, "-");
+assert.equal(missingVm.metrics.totalClaims, 0);
+assert.deepEqual(missingVm.keyCorrections, []);
+assert.deepEqual(missingVm.frameworkChecks, []);
+
+let state = workspaceState.createInitialState();
+state = workspaceState.startRun(state, "Question one?", "2026-08-25T00:00:00.000Z");
+state = workspaceState.recordStage(state, "raw_generation", "2026-08-25T00:00:01.000Z");
+state = workspaceState.receiveRawAnswer(state, samplePayload.raw_answer);
+state = workspaceState.completeRun(state, samplePayload, vm, "2026-08-25T00:00:02.000Z");
+assert.equal(state.status, "completed");
+assert.equal(state.viewModel.queryId, "query-123");
+const resetState = workspaceState.startRun(state, "Question two?", "2026-08-25T00:01:00.000Z");
+assert.equal(resetState.viewModel, null, "starting a new request must clear previous results");
+assert.equal(resetState.rawAnswer, null, "starting a new request must clear previous raw answer");
+const cancelled = workspaceState.cancelRun(resetState, "2026-08-25T00:01:01.000Z");
+assert.equal(cancelled.status, "failed");
+assert.equal(cancelled.error.code, "CANCELLED");
+
+const markdown = workspaceExport.buildMarkdownReport(vm, "2026-08-25T00:00:03.000Z");
+assert.match(markdown, /Raw Answer/);
+assert.match(markdown, /Anchor-Corrected Answer/);
+assert.match(markdown, /query-123/);
+assert.match(markdown, /Mock evidence/);
+const auditJson = workspaceExport.buildAuditJson(vm);
+assert.equal(auditJson.query_id, "query-123");
+assert.equal(auditJson.corrections.length, 2);
+assert.equal(workspaceExport.makeReportFilename(vm, "md", new Date("2026-08-25T00:00:03.000Z")).endsWith(".md"), true);
 
 console.log("frontend static checks passed");
 

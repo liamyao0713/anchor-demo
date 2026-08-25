@@ -13,6 +13,48 @@ const contentTypes = new Map([
 ]);
 
 const server = createServer(async (request, response) => {
+  if (request.method === "GET" && request.url === "/health") {
+    sendJson(response, { status: "ok", service: "anchor-ai" });
+    return;
+  }
+
+  if (request.method === "GET" && request.url === "/ready") {
+    sendJson(response, {
+      status: "ready",
+      dependencies: {
+        database: "ok",
+        retrieval: "ok",
+        llm: "configured",
+        configuration: "ok",
+      },
+    });
+    return;
+  }
+
+  if (request.method === "POST" && request.url === "/api/chat/stream") {
+    const requestBody = await consumeRequest(request);
+    const mockResponse = mockChatResponse(requestBody);
+    if (mockResponse.status !== 200) {
+      sendJson(response, mockResponse.body, mockResponse.status);
+      return;
+    }
+    response.writeHead(200, {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    await sendStreamEvent(response, "stage", { query_id: "mock-query-id", stage: "accepted" });
+    await sendStreamEvent(response, "stage", { query_id: "mock-query-id", stage: "raw_generation" });
+    await sendStreamEvent(response, "raw_answer", { query_id: "mock-query-id", raw_answer: mockResponse.body.raw_answer });
+    if (mockResponse.delayMs) await delay(mockResponse.delayMs);
+    await sendStreamEvent(response, "stage", { query_id: "mock-query-id", stage: "retrieval" });
+    await sendStreamEvent(response, "stage", { query_id: "mock-query-id", stage: "claim_extraction" });
+    await sendStreamEvent(response, "stage", { query_id: "mock-query-id", stage: "verification" });
+    await sendStreamEvent(response, "stage", { query_id: "mock-query-id", stage: "correction" });
+    await sendStreamEvent(response, "final", mockResponse.body);
+    response.end();
+    return;
+  }
+
   if (request.method === "POST" && request.url === "/api/chat") {
     const requestBody = await consumeRequest(request);
     const mockResponse = mockChatResponse(requestBody);
@@ -80,7 +122,7 @@ function consumeRequest(request) {
 function mockChatResponse(requestBody) {
   const question = parseQuestion(requestBody);
   const rawAnswer = {
-    text: "Raw mock answer",
+    text: "Raw mock answer\n\nMock claim. Mock claim needing weaker wording.",
     provider: "mock-provider",
     model: "mock-model",
     grounded_by_anchor: false,
@@ -113,7 +155,7 @@ function mockChatResponse(requestBody) {
   if (/slow/i.test(question)) {
     return {
       ...okResponse(successBody(question, rawAnswer)),
-      delayMs: 2500,
+      delayMs: 8000,
     };
   }
   if (/database unavailable|retrieval unavailable|calibration unavailable/i.test(question)) {
@@ -169,7 +211,7 @@ function successBody(question, rawAnswer) {
   return {
     ...baseResponse(question, rawAnswer),
     corrected_answer: {
-      text: "Corrected mock answer",
+      text: "Corrected mock answer. Mock claim is supported [1]. Mock claim may be appropriate in selected patients [2].",
       evidence_status: "sufficient",
     },
     claims: [
@@ -279,6 +321,12 @@ function parseQuestion(requestBody) {
 
 function delay(ms) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
+}
+
+function sendStreamEvent(response, event, data) {
+  return new Promise((resolve) => {
+    response.write(`${JSON.stringify({ event, data })}\n`, resolve);
+  });
 }
 
 function sendJson(response, payload, status = 200) {
