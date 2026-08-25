@@ -33,6 +33,8 @@
     "not_verifiable",
     "not_evaluated",
   ];
+  const ABOUT_LANGUAGE_STORAGE_KEY = "ANCHOR_ABOUT_LANGUAGE";
+  const ABOUT_LANGUAGES = new Set(["en", "zh"]);
 
   document.addEventListener("DOMContentLoaded", initWorkspace);
 
@@ -55,6 +57,7 @@
     let citationSearch = "";
 
     refs.apiBaseInput.value = apiBase;
+    initAboutLanguage();
     bindEvents();
     renderAll();
     checkConnection();
@@ -80,6 +83,14 @@
         submitCurrentQuestion();
       });
       refs.cancelButton.addEventListener("click", cancelCurrentRun);
+
+      refs.aboutButton.addEventListener("click", scrollToAbout);
+      refs.aboutLangButtons.forEach((button) => {
+        button.addEventListener("click", () => setAboutLanguage(button.dataset.aboutLang));
+      });
+      refs.readGuideCards.forEach((card) => {
+        card.addEventListener("click", () => scrollToWorkspacePanel(card.dataset.readPanel));
+      });
 
       refs.settingsButton.addEventListener("click", openSettings);
       refs.settingsCloseButton.addEventListener("click", closeSettings);
@@ -154,6 +165,57 @@
         citationSearch = refs.citationSearch.value.trim().toLowerCase();
         renderCitationsTab();
       });
+    }
+
+    function initAboutLanguage() {
+      setAboutLanguage(initialAboutLanguage(), { persist: false });
+    }
+
+    function initialAboutLanguage() {
+      const storedLanguage = safeLocalStorageGet(ABOUT_LANGUAGE_STORAGE_KEY);
+      if (ABOUT_LANGUAGES.has(storedLanguage)) return storedLanguage;
+      const browserLanguage = (window.navigator.languages && window.navigator.languages[0]) ||
+        window.navigator.language ||
+        "en";
+      return String(browserLanguage).toLowerCase().startsWith("zh") ? "zh" : "en";
+    }
+
+    function setAboutLanguage(language, options) {
+      const nextLanguage = ABOUT_LANGUAGES.has(language) ? language : "en";
+      refs.aboutSection.dataset.aboutLanguage = nextLanguage;
+      refs.aboutLangButtons.forEach((button) => {
+        const isActive = button.dataset.aboutLang === nextLanguage;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+      if (!options || options.persist !== false) {
+        safeLocalStorageSet(ABOUT_LANGUAGE_STORAGE_KEY, nextLanguage);
+      }
+    }
+
+    function scrollToAbout() {
+      scrollToElement(refs.aboutSection, "start");
+    }
+
+    function scrollToWorkspacePanel(panelKey) {
+      if (!PANEL_KEYS.includes(panelKey)) return;
+      state = State.setActivePanel(state, panelKey);
+      renderResponsivePanels();
+      const targetPanel = refs.workspacePanels.find((panel) => panel.dataset.panel === panelKey);
+      if (targetPanel) {
+        scrollToElement(targetPanel, "center");
+      }
+    }
+
+    function scrollToElement(element, block) {
+      const behavior = reducedMotion() ? "auto" : "smooth";
+      if (block === "center") {
+        element.scrollIntoView({ block: "center", behavior });
+        return;
+      }
+      const headerHeight = refs.productBar.getBoundingClientRect().height;
+      const top = element.getBoundingClientRect().top + window.scrollY - headerHeight - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior });
     }
 
     async function submitCurrentQuestion() {
@@ -931,6 +993,7 @@
       taskTitle: required(root, "#aw-task-title"),
       topicTag: required(root, "#aw-topic-tag"),
       modelTag: required(root, "#aw-model-tag"),
+      productBar: required(root, ".aw-product-bar"),
       connectionBadge: required(root, "#aw-connection"),
       apiHost: required(root, "#aw-api-host"),
       settingsButton: required(root, "#aw-settings-button"),
@@ -959,6 +1022,10 @@
       frameworkChecks: required(root, "#aw-framework-checks"),
       clinicalImpact: required(root, "#aw-clinical-impact"),
       keyCorrections: required(root, "#aw-key-corrections"),
+      aboutButton: required(root, "#aw-about-button"),
+      aboutSection: required(root, "#aw-about"),
+      aboutLangButtons: Array.from(root.querySelectorAll(".aw-lang-button")),
+      readGuideCards: Array.from(root.querySelectorAll(".aw-read-card")),
       panelTabs: Array.from(root.querySelectorAll(".aw-panel-tab")),
       workspacePanels: Array.from(root.querySelectorAll(".aw-workspace-panel")),
       rawMeta: required(root, "#aw-raw-meta"),

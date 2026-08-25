@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AnchorAI | Evidence Verification Workspace</title>
-  <link rel="stylesheet" href="workspace.css?v=20260825-workspace-clean">
-  <script src="workspace-api.js?v=20260825-workspace-clean" defer></script>
-  <script src="workspace-adapter.js?v=20260825-workspace-clean" defer></script>
-  <script src="workspace-state.js?v=20260825-workspace-clean" defer></script>
-  <script src="workspace-export.js?v=20260825-workspace-clean" defer></script>
-  <script src="workspace-ui.js?v=20260825-workspace-clean" defer></script>
+  <link rel="stylesheet" href="workspace.css?v=20260825-about">
+  <script src="workspace-api.js?v=20260825-about" defer></script>
+  <script src="workspace-adapter.js?v=20260825-about" defer></script>
+  <script src="workspace-state.js?v=20260825-about" defer></script>
+  <script src="workspace-export.js?v=20260825-about" defer></script>
+  <script src="workspace-ui.js?v=20260825-about" defer></script>
 </head>
 <body class="anchor-workspace-mode">
 <main id="anchor-workspace" class="aw-shell" data-run-state="idle">
@@ -26,6 +26,7 @@
         <span id="aw-connection" class="aw-connection aw-connection-checking">Checking</span>
         <span id="aw-api-host" class="aw-api-host">api.882498.xyz</span>
       </div>
+      <button id="aw-about-button" class="aw-button" type="button">About AnchorAI</button>
       <button id="aw-settings-button" class="aw-button" type="button" aria-haspopup="dialog">Settings</button>
       <div id="aw-export-wrap" class="aw-export-wrap">
         <button id="aw-export-button" class="aw-primary-button aw-export-button" type="button" aria-haspopup="menu" aria-expanded="false">Export</button>
@@ -192,6 +193,147 @@
         </div>
       </article>
     </div>
+  </section>
+
+  <section id="aw-about" class="aw-about" aria-labelledby="aw-about-title" data-about-language="en">
+    <div class="aw-about-head">
+      <div>
+        <p class="aw-eyebrow">About AnchorAI</p>
+        <h2 id="aw-about-title">
+          <span data-lang-block="en">A verification layer for evidence-grounded medical AI output</span>
+          <span data-lang-block="zh">面向医疗 AI 输出的证据校准层</span>
+        </h2>
+      </div>
+      <div class="aw-language-toggle" role="group" aria-label="About section language">
+        <button id="aw-about-lang-en" class="aw-lang-button active" type="button" data-about-lang="en" aria-pressed="true">EN</button>
+        <button id="aw-about-lang-zh" class="aw-lang-button" type="button" data-about-lang="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+
+    <article class="aw-about-card aw-about-main">
+      <div class="aw-about-copy" data-lang-block="en">
+        <p class="aw-about-lead">AnchorAI does not compete with LLMs on intelligence. The better the LLM, the more it proves the verification layer works: confirming good answers, catching fabricated ones, and grounding uncertain answers in current, verified evidence.</p>
+        <p>Anchor AI is not another medical chatbot. It is an evidence calibration layer for trustworthy medical AI outputs. While most medical AI tools focus on generating fluent answers, retrieving papers, summarizing guidelines, or integrating with clinical workflows, Anchor AI focuses on a more fundamental question: is the AI-generated medical answer actually justified by the best available evidence?</p>
+        <p>Anchor AI converts medical evidence into structured, computable evidence objects, including the clinical question, effect size, certainty of evidence, safety information, patient-important outcomes, and source trace. It then compares LLM-generated claims against this evidence layer, detects clinically important mismatches, and produces an auditable corrected output.</p>
+        <p class="aw-about-punch">The key innovation is not making medical AI sound more professional. It is making medical AI more evidence-aligned, certainty-calibrated, traceable, and clinically defensible: turning fluent and plausible output into evidence-calibrated and auditable output.</p>
+        <div class="aw-audience">
+          <h3>Who needs AnchorAI</h3>
+          <p>Anchor AI is designed for high-stakes users who rely on medical AI outputs and need them to be evidence-aligned, certainty-calibrated, and auditable, including pharmaceutical companies, HTA agencies, payers, hospitals, clinicians, medical educators, guideline developers, and evidence-synthesis teams.</p>
+        </div>
+      </div>
+      <div class="aw-about-copy" data-lang-block="zh">
+        <p class="aw-about-lead">AnchorAI 不和 LLM 比聪明。LLM 越准，越能证明验证层有效：确认可靠回答，抓住编造内容，并在模型不确定时用当前已核验的证据接地。</p>
+        <p>Anchor AI 并非又一款医疗聊天机器人，而是面向可信医疗 AI 输出的证据校准层。当前主流医疗 AI 多聚焦于生成流畅回答、检索文献、归纳指南或对接临床工作流；Anchor AI 关注的，是一个更为根本的问题：AI 给出的医疗答案，是否真正得到现有最佳证据的支持？</p>
+        <p>Anchor AI 将医学证据转化为结构化、可计算的证据对象，涵盖临床问题、效应量、证据确定性、安全性信息、患者重要结局与来源溯源。在此基础上，它将 LLM 生成的论断与证据层进行比对，识别具有临床意义的偏差，并输出可审计追溯的矫正结果。</p>
+        <p class="aw-about-punch">其核心创新不在于让医疗 AI“听起来更专业”，而在于让医疗 AI 在证据对齐、确定性校准、可溯源与临床可辩护性上提升：把“流畅而貌似合理”的输出转化为“证据校准且可审计”的输出。</p>
+        <div class="aw-audience">
+          <h3>谁需要 AnchorAI</h3>
+          <p>Anchor AI 面向高风险决策场景下依赖医疗 AI 输出、并要求输出做到证据对齐、确定性校准、可审计追溯的用户群体，包括制药企业、卫生技术评估（HTA）机构、医保支付方、医院、临床医生、医学教育者、临床指南制定者，以及循证医学综合团队。</p>
+        </div>
+      </div>
+    </article>
+
+    <section class="aw-about-section" aria-labelledby="aw-read-workspace-title">
+      <div class="aw-section-heading">
+        <p class="aw-eyebrow">Workspace guide</p>
+        <h2 id="aw-read-workspace-title">
+          <span data-lang-block="en">How to read this workspace</span>
+          <span data-lang-block="zh">如何阅读当前工作台</span>
+        </h2>
+      </div>
+      <div class="aw-read-guide">
+        <button class="aw-read-card aw-read-card-a" type="button" data-read-panel="raw">
+          <span class="aw-read-token">A</span>
+          <strong>Uncorrected answer</strong>
+          <span data-lang-block="en">Shows the model's original answer without Anchor rewriting. Claims that Anchor can reliably identify as suspicious or insufficiently supported are highlighted or listed.</span>
+          <span data-lang-block="zh">显示模型的原始回答，不经过 Anchor 改写。Anchor 能可靠识别的可疑或证据不足 claim 会被高亮或列出。</span>
+        </button>
+        <button class="aw-read-card aw-read-card-b" type="button" data-read-panel="corrected">
+          <span class="aw-read-token">B</span>
+          <strong>Anchor-corrected answer</strong>
+          <span data-lang-block="en">Shows the answer calibrated against the current knowledge base and available evidence. Clean mode is for reading; Tracked mode shows claim-level changes and citation markers.</span>
+          <span data-lang-block="zh">展示基于当前知识库和可用证据校正后的回答。Clean 模式用于直接阅读，Tracked 模式用于查看 claim 级修改和 citation 标记。</span>
+        </button>
+        <button class="aw-read-card aw-read-card-c" type="button" data-read-panel="audit">
+          <span class="aw-read-token">C</span>
+          <strong>Audit / Differences / Citations</strong>
+          <span data-lang-block="en">Shows what the model said, what Anchor verified, why a correction was made, whether citations match the claim, and the run details needed for traceability.</span>
+          <span data-lang-block="zh">展示模型原话、Anchor 核验后的表达、为什么校正、citation 是否真实且支持对应 claim，以及可追溯的运行细节。</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="aw-about-section" aria-labelledby="aw-why-title">
+      <div class="aw-section-heading">
+        <p class="aw-eyebrow">Why Anchor matters</p>
+        <h2 id="aw-why-title">
+          <span data-lang-block="en">Why Anchor matters</span>
+          <span data-lang-block="zh">为什么 Anchor 重要</span>
+        </h2>
+      </div>
+      <div class="aw-explainer-grid">
+        <article class="aw-explainer-card">
+          <span class="aw-card-icon" aria-hidden="true">!</span>
+          <h3>Evidence risk</h3>
+          <p data-lang-block="en">Medical LLM answers can contain citation errors, stale evidence, fabricated statements, and evidence drift.</p>
+          <p data-lang-block="zh">医疗 LLM 回答可能包含错误引用、过时证据、内容编造和证据时效漂移。</p>
+          <p data-lang-block="en">A fluent answer can look credible while its supporting paper is missing, mismatched, outdated, or weaker than the wording suggests.</p>
+          <p data-lang-block="zh">流畅回答可能看起来可信，但支撑文献可能缺失、张冠李戴、已经过时，或并不足以支持过度确定的表述。</p>
+        </article>
+        <article class="aw-explainer-card">
+          <span class="aw-card-icon" aria-hidden="true">Rx</span>
+          <h3>Clinical consequence</h3>
+          <p data-lang-block="en">Unsupported or over-certain medical claims can affect interpretation, risk recognition, medication reasoning, and patient counseling.</p>
+          <p data-lang-block="zh">缺乏证据或过度确定的医学论断，可能影响临床理解、风险识别、用药判断和患者沟通。</p>
+          <p data-lang-block="en">Anchor separates what the model said from what the evidence can actually support, so uncertainty and limitations remain visible.</p>
+          <p data-lang-block="zh">Anchor 将模型原话与证据真正能够支持的内容分开呈现，使不确定性和适用边界保持可见。</p>
+        </article>
+        <article class="aw-explainer-card">
+          <span class="aw-card-icon" aria-hidden="true">OK</span>
+          <h3>Verifiable correction</h3>
+          <p data-lang-block="en">Anchor provides citation checks, KB-anchored claims, visible corrections, and a structured audit trail.</p>
+          <p data-lang-block="zh">Anchor 提供可核验的 citation、KB 锚定的 claim、清晰可见的校正和结构化审计记录。</p>
+          <p data-lang-block="en">The result is not a second black-box answer. It is a comparison between generated claims, available evidence, and the correction rationale.</p>
+          <p data-lang-block="zh">结果不是另一个黑盒答案，而是对生成论断、可用证据和校正理由之间关系的对照。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="aw-about-section" aria-labelledby="aw-moats-title">
+      <div class="aw-section-heading">
+        <p class="aw-eyebrow">The 3 Anchor moats</p>
+        <h2 id="aw-moats-title">
+          <span data-lang-block="en">The 3 Anchor moats</span>
+          <span data-lang-block="zh">Anchor 的 3 大差异化</span>
+        </h2>
+      </div>
+      <div class="aw-moat-grid">
+        <article class="aw-explainer-card aw-moat-card">
+          <span class="aw-card-icon" aria-hidden="true">KB</span>
+          <h3>Structured evidence KB</h3>
+          <p data-lang-block="en">Anchor converts medical studies into structured evidence records across supported disease areas, preserving source trace and review metadata where those fields are available.</p>
+          <p data-lang-block="zh">Anchor 将医学研究转化为覆盖受支持疾病领域的结构化证据记录，并在相关字段存在时保留来源溯源和审核元数据。</p>
+          <p data-lang-block="en">This evidence layer is the foundation for claim verification and correction. The intended workflow is extraction, audit, review, and approval before evidence is used for grounding.</p>
+          <p data-lang-block="zh">这一证据层是 claim 核验与校正的基础。目标工作流是抽取、审计、审核与批准，然后再用于证据接地。</p>
+        </article>
+        <article class="aw-explainer-card aw-moat-card">
+          <span class="aw-card-icon" aria-hidden="true">ABC</span>
+          <h3>Visible correction layer</h3>
+          <p data-lang-block="en">The workspace keeps the original answer visible beside the Anchor-corrected answer and the correction audit.</p>
+          <p data-lang-block="zh">工作台把模型原始回答、Anchor 校正回答和校正审计并排保留。</p>
+          <p data-lang-block="en">Users can inspect what changed, why it changed, whether better evidence exists, and which citation or evidence record supports the revised wording.</p>
+          <p data-lang-block="zh">用户可以查看具体改了什么、为什么改、是否存在更好证据，以及哪些 citation 或 evidence record 支持校正后的表述。</p>
+        </article>
+        <article class="aw-explainer-card aw-moat-card">
+          <span class="aw-card-icon" aria-hidden="true">ID</span>
+          <h3>Auditable trace</h3>
+          <p data-lang-block="en">Claims, evidence, citations, corrections, query ID, and run details are linked so a medical AI output can be inspected after the fact.</p>
+          <p data-lang-block="zh">claim、evidence、citation、correction、query ID 和 run details 之间保持关联，使医疗 AI 输出可以事后审计。</p>
+          <p data-lang-block="en">That traceability is designed for high-risk and regulated medical AI use cases, without claiming regulatory approval or replacing clinical judgment.</p>
+          <p data-lang-block="zh">这种可追溯性面向高风险、受监管的医疗 AI 使用场景，但不声称获得监管认证，也不替代临床判断。</p>
+        </article>
+      </div>
+    </section>
   </section>
 
   <div id="aw-settings-panel" class="aw-settings-panel" role="dialog" aria-modal="true" aria-labelledby="aw-settings-title" aria-hidden="true" hidden>
