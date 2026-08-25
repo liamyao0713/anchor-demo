@@ -452,8 +452,8 @@ footer{text-align:center;font-size:11px;color:#94A3B8;padding:20px}
 /* widen the reading container so 3 dense columns get real room (B6's .wrap caps ~1004px,
    built for single-column answer-first reading). 3-column compare needs ~1640px. */
 .wrap{max-width:1640px !important}
-.v7-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start;margin:14px 0}
-@media(max-width:1100px){.v7-cols{grid-template-columns:1fr}}
+.v7-cols{--v7-panel-body-height:clamp(360px,58vh,560px);display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start;margin:14px 0}
+@media(max-width:1100px){.v7-cols{--v7-panel-body-height:clamp(300px,56vh,460px);grid-template-columns:1fr}}
 .v7-col{border:1px solid #e5e7eb;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .v7-col-h{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:800;font-size:14px;color:#fff;letter-spacing:.01em}
 .v7-badge{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25);font-size:13px}
@@ -461,7 +461,7 @@ footer{text-align:center;font-size:11px;color:#94A3B8;padding:20px}
 .v7-h-b{background:linear-gradient(90deg,#15803d,#16a34a)}
 .v7-h-c{background:linear-gradient(90deg,#6d28d9,#7c3aed)}
 .v7-col-a{border-color:#fecaca}.v7-col-b{border-color:#bbf7d0}.v7-col-c{border-color:#ddd6fe}
-.v7-col-body{padding:12px 13px;font-size:13.5px;line-height:1.62;box-sizing:border-box;scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
+.v7-col-body{height:var(--v7-panel-body-height);overflow-y:auto;overscroll-behavior:contain;padding:12px 13px;font-size:13.5px;line-height:1.62;box-sizing:border-box;scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
 .v7-col-body::-webkit-scrollbar{width:8px}
 .v7-col-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
 .v7-col-body::-webkit-scrollbar-track{background:transparent}
@@ -519,20 +519,12 @@ function setModel(q,m){document.querySelectorAll('.mwrap[data-q="'+q+'"]').forEa
 function setCorrView(btn,view){var blk=btn.closest('.anchor-corr-block');if(!blk)return;blk.dataset.view=view;blk.querySelectorAll('.corr-view').forEach(function(v){v.classList.toggle('active',v.classList.contains('corr-view-'+view));});blk.querySelectorAll('.cvbtn').forEach(function(b){b.classList.toggle('active',b.dataset.view===view);});}
 function copyPrompt(btn){var box=btn.closest('.prompt-box');if(!box)return false;var sys=box.querySelector('.prompt-sys-full').innerText;var usr=box.querySelector('.prompt-user').innerText;var txt='[SYSTEM PROMPT]\n'+sys+'\n\n[USER QUESTION]\n'+usr;navigator.clipboard.writeText(txt).then(function(){var orig=btn.innerHTML;btn.innerHTML='✓ Copied';setTimeout(function(){btn.innerHTML=orig;},1600);}).catch(function(e){alert('Copy failed: '+e);});return false;}
 
-// Equalize the 3 columns of the ACTIVE model block to the SHORTEST column's height,
-// each body scrolls internally (Emma: 并列三栏对齐到最短 + 鼠标内部滚动). Re-run on every
-// event that can change content/height (page/model/lang switch, slider, resize).
+// A/B/C panel bodies use CSS fixed heights and internal scrolling. Keep this hook to
+// clear stale inline sizing from older versions after page/model/lang changes.
 function v7EqualizeCols(){
-  var wide = window.innerWidth > 1100;
-  document.querySelectorAll('.page.active .mwrap.active .v7-cols').forEach(function(cols){
-    var bodies = [].slice.call(cols.querySelectorAll('.v7-col-body'));
-    bodies.forEach(function(b){ b.style.height=''; b.style.overflowY=''; });
-    if(!wide || bodies.length<2) return;            // stacked layout: natural height
-    var min = Infinity;
-    bodies.forEach(function(b){ if(b.scrollHeight < min) min = b.scrollHeight; });
-    var cap = Math.round(window.innerHeight * 0.82), floor = 460;
-    var h = Math.max(floor, Math.min(min, cap));
-    bodies.forEach(function(b){ b.style.height = h+'px'; b.style.overflowY='auto'; });
+  document.querySelectorAll('.v7-cols .v7-col-body').forEach(function(b){
+    b.style.height='';
+    b.style.overflowY='';
   });
 }
 function v7Slide(cb){

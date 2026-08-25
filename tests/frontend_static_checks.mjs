@@ -43,6 +43,19 @@ assert.match(js, /completed/, "frontend must model completed state");
 assert.match(js, /failed/, "frontend must model failed state");
 assert.match(css, /live-phase-track/, "frontend must style the live phase tracker");
 assert.match(css, /live-scope-note/, "frontend must style the KB scope note");
+assert.match(html, /--v7-panel-body-height/, "static A/B/C panels must use fixed body heights");
+assert.match(
+  html,
+  /\.v7-col-body\{height:var\(--v7-panel-body-height\);overflow-y:auto;overscroll-behavior:contain/,
+  "static A/B/C panel text must scroll inside fixed boxes",
+);
+assert.doesNotMatch(html, /Math\.min\(min,\s*cap\)/, "A/B/C panels must not resize to content height");
+assert.match(css, /--v7-panel-body-height/, "live A/B/C panels must set a fixed body height");
+assert.match(
+  css,
+  /\.live-col \.v7-col-body\s*\{[\s\S]*height: var\(--v7-panel-body-height\);[\s\S]*overflow-y: auto;[\s\S]*overscroll-behavior: contain;/,
+  "live A/B/C panel text must scroll inside fixed boxes",
+);
 assert.match(js, /corrected claims/, "Corrected Answer area must expose corrected claim count");
 assert.match(js, /errorInfoFromHttp/, "frontend must classify HTTP errors");
 assert.match(js, /errorInfoFromException/, "frontend must classify network and timeout errors");
