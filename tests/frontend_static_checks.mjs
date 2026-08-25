@@ -67,6 +67,8 @@ assert.match(workspaceCss, /aw-workspace-grid/, "workspace must style the three-
 assert.match(workspaceCss, /grid-template-columns:\s*minmax\(0,\s*32fr\) minmax\(0,\s*34fr\) minmax\(0,\s*34fr\)/, "desktop panels must use the requested proportions");
 assert.match(workspaceCss, /@media \(max-width: 768px\)/, "workspace must define mobile panel tabs");
 assert.match(workspaceCss, /overflow-y:\s*auto/, "workspace panels must scroll internally");
+assert.match(workspaceCss, /\.aw-workspace-panel\s*\{[\s\S]*height:\s*var\(--aw-panel-height\)/, "workspace panels must use a fixed height");
+assert.match(workspaceCss, /\.aw-workspace-panel\s*\{[\s\S]*max-height:\s*var\(--aw-panel-height\)/, "workspace panels must not expand past the fixed height");
 assert.match(html, /--v7-panel-body-height/, "static A/B/C panels must use fixed body heights");
 assert.match(
   html,

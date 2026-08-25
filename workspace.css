@@ -559,7 +559,9 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 .aw-workspace-panel {
   display: flex;
   min-width: 0;
-  min-height: var(--aw-panel-height);
+  height: var(--aw-panel-height);
+  min-height: 0;
+  max-height: var(--aw-panel-height);
   overflow: hidden;
   flex-direction: column;
   border: 1px solid var(--aw-border);
@@ -1266,7 +1268,7 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 
 @media (max-width: 768px) {
   :root {
-    --aw-panel-height: calc(100vh - 270px);
+    --aw-panel-height: clamp(360px, calc(100vh - 270px), 620px);
   }
 
   .aw-shell {
@@ -1299,7 +1301,6 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 
   .aw-workspace-panel {
     display: none;
-    min-height: var(--aw-panel-height);
   }
 
   .aw-workspace-panel.aw-mobile-active {
