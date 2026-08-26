@@ -559,31 +559,28 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   border-color: var(--aw-blue);
   background: var(--aw-blue-soft);
   color: #2448b5;
-}
-
-.aw-workspace-grid {
+}.aw-workspace-grid {
   display: grid;
+  /* .v7-cols uses equal thirds, but the 32/34/34 split was an explicit earlier
+     request and is pinned by a static check; the difference is ~2% per column. */
   grid-template-columns: minmax(0, 32fr) minmax(0, 34fr) minmax(0, 34fr);
-  gap: 16px;
-  align-items: stretch;
-}
-
-.aw-workspace-panel {
+  gap: 14px;
+  align-items: start;
+  margin: 14px 0;
+}.aw-workspace-panel {
   display: flex;
+  flex-direction: column;
   min-width: 0;
-  height: var(--aw-panel-height);
   min-height: 0;
+  height: var(--aw-panel-height);
   max-height: var(--aw-panel-height);
   overflow: hidden;
-  flex-direction: column;
-  border: 1px solid var(--aw-border);
-  border-radius: var(--aw-radius);
-  background: var(--aw-card);
-  box-shadow: var(--aw-shadow);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
   scroll-margin-top: 86px;
-}
-
-.aw-panel-head {
+}.aw-panel-head {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -591,24 +588,18 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: center;
-  min-height: 58px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--aw-border);
-}
-
-.aw-panel-a .aw-panel-head {
-  background: var(--aw-a-soft);
-  border-color: #f0c6c0;
-}
-
-.aw-panel-b .aw-panel-head {
-  background: var(--aw-b-soft);
-  border-color: #c8e8ce;
-}
-
-.aw-panel-c .aw-panel-head {
-  background: var(--aw-c-soft);
-  border-color: #ded0ff;
+  border: 0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}.aw-panel-a .aw-panel-head {
+  background: linear-gradient(90deg, #b91c1c, #dc2626);
+}.aw-panel-b .aw-panel-head {
+  background: linear-gradient(90deg, #15803d, #16a34a);
+}.aw-panel-c .aw-panel-head {
+  background: linear-gradient(90deg, #6d28d9, #7c3aed);
 }
 
 .aw-panel-title {
@@ -616,18 +607,16 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.aw-letter {
+}.aw-letter {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .aw-panel-a .aw-letter {
@@ -640,18 +629,17 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
 
 .aw-panel-c .aw-letter {
   background: var(--aw-c);
-}
-
-.aw-panel-title h2 {
+}.aw-panel-title h2 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.aw-panel-title p {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}.aw-panel-title p {
   margin: 2px 0 0;
-  color: var(--aw-muted);
-  font-size: 12px;
+  color: rgba(255, 255, 255, .88);
+  font-size: 11.5px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
@@ -661,14 +649,14 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   justify-content: flex-end;
   gap: 7px;
   flex-wrap: wrap;
-}
-
-.aw-panel-body {
+}.aw-panel-body {
   flex: 1;
   min-height: 0;
-  padding: 14px;
+  padding: 12px 13px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  font-size: 13.5px;
+  line-height: 1.62;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
@@ -1492,7 +1480,6 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   100% { box-shadow: 0 0 0 12px rgba(49, 91, 232, 0); }
 }
 
-
 /* ---- v40 explainer format ---------------------------------------------------
    Transcribed from the pre-workspace page: .hero-sec / .hero-grid / .hero-card /
    .hc-ico / .hc-big / .hc-title / .hc-desc and the .anchor-intro trust box.
@@ -1535,6 +1522,48 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   color: #0F172A;
 }
 .aw-audience b { color: #7C2D12; }
+
+/* ---- v40 column treatment, continued ---------------------------------------
+   The A/B/C panels now wear the case gallery's .v7-col header bar, so the
+   letter chip inverts and the header controls have to read on a solid colour. */
+.aw-panel-a .aw-letter { color: #b91c1c; background: #fff; }
+.aw-panel-b .aw-letter { color: #15803d; background: #fff; }
+.aw-panel-c .aw-letter { color: #6d28d9; background: #fff; }
+
+.aw-panel-head .aw-ghost-button,
+.aw-panel-head .aw-mode-button,
+.aw-panel-head .aw-icon-button {
+  border-color: rgba(255, 255, 255, .45);
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+  font-size: 12px;
+}
+.aw-panel-head .aw-ghost-button:hover:not(:disabled),
+.aw-panel-head .aw-mode-button:hover,
+.aw-panel-head .aw-icon-button:hover {
+  border-color: rgba(255, 255, 255, .75);
+  background: rgba(255, 255, 255, .26);
+}
+.aw-panel-head .aw-ghost-button:disabled {
+  border-color: rgba(255, 255, 255, .28);
+  background: rgba(255, 255, 255, .08);
+  color: rgba(255, 255, 255, .6);
+}
+.aw-panel-head .aw-mode-button.active {
+  border-color: #fff;
+  background: #fff;
+  color: #0f172a;
+}
+.aw-panel-head .aw-mode-toggle { border-color: rgba(255, 255, 255, .45); }
+
+/* ---- 1) the two plain intro paragraphs were the only unframed blocks in the
+   About card, which broke the rhythm against .aw-about-lead / -punch / -audience */
+.aw-about-copy > p:not(.aw-about-lead):not(.aw-about-punch) {
+  padding: 10px 14px;
+  border-left: 3px solid #CBD5E1;
+  border-radius: 6px;
+  background: #F8FAFC;
+}
 @media (max-width: 1199px) and (min-width: 769px) {
   :root {
     --aw-panel-height: 520px;

@@ -66,21 +66,61 @@
     });
   };
 
-  /* ---------- copy the locked prompt ---------- */
+  /* ---------- copy helpers ---------- */
 
-  window.copyPrompt = function copyPrompt(btn) {
-    var box = btn.closest(".prompt-box");
-    if (!box) return false;
-    var sys = box.querySelector(".prompt-sys-full").innerText;
-    var usr = box.querySelector(".prompt-user").innerText;
-    var txt = "[SYSTEM PROMPT]\n" + sys + "\n\n[USER QUESTION]\n" + usr;
-    navigator.clipboard.writeText(txt).then(function () {
+  /* Read an element the way the reader sees it. innerText already skips the
+     hidden half of a .zh-only / .en-only pair, but it falls back to textContent
+     when the element is not being rendered -- which is exactly the case for the
+     system prompt while its <details> is closed -- so pick the visible language
+     explicitly instead of trusting the fallback. */
+  function visibleText(el) {
+    if (!el) return "";
+    var lang = (gallery() && gallery().dataset.lang) === "zh" ? "zh" : "en";
+    var scoped = el.querySelector(lang === "zh" ? ".zh-only" : ".en-only");
+    var source = scoped || el;
+    return (source.innerText || source.textContent || "").trim();
+  }
+
+  function flashCopied(btn, text) {
+    navigator.clipboard.writeText(text).then(function () {
       var orig = btn.innerHTML;
       btn.innerHTML = "✓ Copied";
       setTimeout(function () { btn.innerHTML = orig; }, 1600);
     }).catch(function (e) {
       alert("Copy failed: " + e);
     });
+  }
+
+  /* The question alone. The label above these blocks promises exactly this, so
+     it must not drag the ~19 lines of system prompt along with it. */
+  window.copyQuestion = function copyQuestion(btn) {
+    var box = btn.closest(".prompt-box");
+    if (!box) return false;
+    var user = box.querySelector(".prompt-user");
+    if (!user) return false;
+    var clone = user.cloneNode(true);
+    clone.querySelectorAll(".copy-btn").forEach(function (b) { b.remove(); });
+    var lang = (gallery() && gallery().dataset.lang) === "zh" ? "zh" : "en";
+    var scoped = clone.querySelector(lang === "zh" ? ".zh-only" : ".en-only");
+    flashCopied(btn, ((scoped || clone).textContent || "").trim());
+    return false;
+  };
+
+  /* The locked prompt plus the question, for reproducing a case in another LLM. */
+  window.copyPrompt = function copyPrompt(btn) {
+    var box = btn.closest(".prompt-box");
+    if (!box) return false;
+    var sys = visibleText(box.querySelector(".prompt-sys-full"));
+    var user = box.querySelector(".prompt-user");
+    var usr = "";
+    if (user) {
+      var clone = user.cloneNode(true);
+      clone.querySelectorAll(".copy-btn").forEach(function (b) { b.remove(); });
+      var lang = (gallery() && gallery().dataset.lang) === "zh" ? "zh" : "en";
+      var scoped = clone.querySelector(lang === "zh" ? ".zh-only" : ".en-only");
+      usr = ((scoped || clone).textContent || "").trim();
+    }
+    flashCopied(btn, "[SYSTEM PROMPT]\n" + sys + "\n\n[USER QUESTION]\n" + usr);
     return false;
   };
 

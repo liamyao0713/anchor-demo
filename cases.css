@@ -117,3 +117,20 @@
 #anchor-cases .cases-intro{margin:22px 0 4px}
 #anchor-cases .cases-title{margin:0 0 8px;font-size:20px;font-weight:700;color:#0F172A}
 #anchor-cases .cases-sub{margin:0;font-size:13.5px;color:#475569;max-width:900px;line-height:1.6}
+
+/* The question block now carries its own copy button, so it becomes a row:
+   the visible language span takes the space, the button stays put. */
+#anchor-cases .prompt-user {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+#anchor-cases .prompt-user > span:not(.copy-btn) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#anchor-cases .copy-q-btn {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  white-space: nowrap;
+}
