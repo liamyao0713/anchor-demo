@@ -80,6 +80,14 @@ assert.doesNotMatch(casesJs, /document\.body\.className/, "case gallery must not
 assert.match(casesJs, /data-ui-language/, "case gallery language must follow the workspace toggle");
 assert.ok(html.indexOf('id="anchor-workspace"') < html.indexOf(casesMarker), "live workspace must stay above the archived gallery");
 
+// Panel A shows the UNCORRECTED answer. Marking a claim there is an assertion that
+// Anchor found something wrong with it, so only adversely judged statuses qualify:
+// "not_verifiable" means Anchor could not check the claim, and "partially_supported"
+// means it IS supported with caveats.
+assert.match(workspaceUiJs, /FLAGGED_STATUSES = new Set\(\["unsupported", "conflicting"\]\)/, "panel A must flag only adversely judged claims");
+assert.doesNotMatch(workspaceUiJs, /filter\(\(claim\) => claim\.verificationStatus !== "supported"\)/, "panel A must not flag every non-supported claim");
+assert.match(workspaceUiJs, /\.filter\(isFlaggedClaim\)/, "raw markers must go through the shared flag predicate");
+
 const htmlIds = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(new Set(htmlIds).size, htmlIds.length, "workspace entry must not contain duplicate IDs");
 

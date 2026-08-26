@@ -1048,7 +1048,7 @@
     function renderFlaggedClaims(vm, matched) {
       replaceChildren(refs.flaggedClaims);
       if (!vm) return;
-      const flagged = vm.claims.filter((claim) => claim.verificationStatus !== "supported");
+      const flagged = vm.claims.filter(isFlaggedClaim);
       const unmatched = flagged.filter((claim) => !matched.has(claim.id));
       if (!unmatched.length) return;
       refs.flaggedClaims.appendChild(create("h3", { className: "aw-mini-heading", text: t("flaggedClaims") }));
@@ -1741,10 +1741,21 @@
     return Boolean(lines[index] && lines[index].includes("|") && lines[index + 1] && /^\s*\|?\s*:?-{3,}:?/.test(lines[index + 1]));
   }
 
+  /* Panel A shows the UNCORRECTED answer. Only statuses Anchor actually judged
+     against evidence belong here. "not_verifiable" means Anchor could not check
+     the claim at all, and "partially_supported" means it IS supported with
+     caveats - neither is a finding about the raw answer, and marking them made
+     Anchor look like it had condemned claims it never evaluated. */
+  const FLAGGED_STATUSES = new Set(["unsupported", "conflicting"]);
+
+  function isFlaggedClaim(claim) {
+    return FLAGGED_STATUSES.has(String(claim.verificationStatus || "").toLowerCase());
+  }
+
   function rawMarkers(vm) {
     const correctionByClaim = new Map(vm.corrections.map((correction) => [correction.claimId, correction]));
     return vm.claims
-      .filter((claim) => claim.verificationStatus !== "supported")
+      .filter(isFlaggedClaim)
       .map((claim) => {
         const correction = correctionByClaim.get(claim.id);
         return {
