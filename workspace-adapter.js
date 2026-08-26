@@ -175,7 +175,9 @@
       correctedClaims: corrections.filter((correction) => correction.material).length,
       unsupportedClaims: claims.filter((claim) => (
         claim.verificationStatus === "unsupported" ||
-        claim.verificationStatus === "conflicting" ||
+        claim.verificationStatus === "conflicting"
+      )).length,
+      notVerifiableClaims: claims.filter((claim) => (
         claim.verificationStatus === "not_verifiable"
       )).length,
     };
@@ -247,7 +249,11 @@
       return "missing context";
     }
     if (normalizedStatus === "conflicting") return "contradicted claim";
-    if (normalizedStatus === "unsupported" || normalizedStatus === "not_verifiable") return "unsupported claim";
+    // not_verifiable means Anchor could not check the claim, which is a different
+    // finding from "the evidence does not support it". Folding them together told
+    // the reader Anchor had refuted claims it never evaluated.
+    if (normalizedStatus === "not_verifiable") return "not verifiable";
+    if (normalizedStatus === "unsupported") return "unsupported claim";
     if (normalizedStatus === "partially_supported") return "partial support";
     if (/narrow|weaker|cautious|calibrat|谨慎|弱化|缩小/.test(text)) return "wording calibration";
     return "other";
