@@ -13,6 +13,19 @@ const workspaceAdapterJs = readFileSync("workspace-adapter.js", "utf8");
 const workspaceStateJs = readFileSync("workspace-state.js", "utf8");
 const workspaceExportJs = readFileSync("workspace-export.js", "utf8");
 const workspaceUiJs = readFileSync("workspace-ui.js", "utf8");
+const casesCss = readFileSync("cases.css", "utf8");
+const casesJs = readFileSync("cases.js", "utf8");
+
+// index.html now carries two independent regions: the live Evidence Verification
+// Workspace, and the archived v40 case gallery migrated below it. The
+// anti-fabrication guards below must keep applying to the workspace only -- the
+// gallery is static archived material and is allowed to name models, cases and
+// PMIDs, because it reports what those models actually said.
+const casesMarker = '<section id="anchor-cases"';
+assert.ok(html.includes(casesMarker), "index.html must include the archived case gallery");
+const workspaceHtml = html.slice(0, html.indexOf(casesMarker));
+const casesHtml = html.slice(html.indexOf(casesMarker));
+
 const liveChat = require("../live-chat.js");
 const workspaceApi = require("../workspace-api.js");
 const workspaceAdapter = require("../workspace-adapter.js");
@@ -51,12 +64,21 @@ assert.match(html, /Uncorrected answer/, "Raw Answer area must be explicitly unc
 assert.match(html, /Anchor-corrected answer/, "Corrected Answer area must remain separate");
 assert.match(html, /Audit \/ Differences \/ Citations/, "Audit area must remain separate");
 assert.match(html, /respiratory medicine/, "workspace must disclose the KB scope in English");
-assert.doesNotMatch(html, /DeepSeek v4 Pro|Gemini 3 Flash|OpenEvidence|ChatGPT 5\.5|Claude 4\.7/, "workspace entry must not hardcode model selectors");
-assert.doesNotMatch(html, /Case 1|Case 2|Case 3|Case 4|Case 5|Case 6/, "workspace entry must not include legacy hardcoded demo cases");
-assert.doesNotMatch(html, /nerandomilast|famotidine|MAST trial|FIBRONEER|CAPE COD/i, "workspace entry must not include legacy hardcoded demo topics");
-assert.doesNotMatch(html, /20–60%|72 deletes|102 inserts|5,240\+|22 diseases|reviewer signed|approved_at|FDA|NMPA/i, "About copy must not carry unverified legacy statistics or regulatory claims");
-assert.doesNotMatch(html, /PMID\s+\d{6,}/, "workspace entry must not hardcode medical citations");
-assert.doesNotMatch(html, /system prompt v1\.5/i, "workspace entry must not expose legacy prompts");
+assert.doesNotMatch(workspaceHtml, /DeepSeek v4 Pro|Gemini 3 Flash|OpenEvidence|ChatGPT 5\.5|Claude 4\.7/, "workspace entry must not hardcode model selectors");
+assert.doesNotMatch(workspaceHtml, /Case 1|Case 2|Case 3|Case 4|Case 5|Case 6/, "workspace entry must not include legacy hardcoded demo cases");
+assert.doesNotMatch(workspaceHtml, /nerandomilast|famotidine|MAST trial|FIBRONEER|CAPE COD/i, "workspace entry must not include legacy hardcoded demo topics");
+assert.doesNotMatch(workspaceHtml, /20–60%|72 deletes|102 inserts|5,240\+|22 diseases|reviewer signed|approved_at|FDA|NMPA/i, "About copy must not carry unverified legacy statistics or regulatory claims");
+assert.doesNotMatch(workspaceHtml, /PMID\s+\d{6,}/, "workspace entry must not hardcode medical citations");
+assert.doesNotMatch(workspaceHtml, /system prompt v1\.5/i, "workspace entry must not expose legacy prompts");
+
+assert.match(casesHtml, /class="pagenav"|class='pagenav'/, "case gallery must keep its case picker");
+assert.equal((casesHtml.match(/<section class='page/g) || []).length, 6, "case gallery must carry all six migrated cases");
+assert.match(html, /cases\.css\?v=/, "index must load the scoped case gallery stylesheet");
+assert.match(html, /cases\.js\?v=/, "index must load the case gallery behaviour");
+assert.doesNotMatch(casesCss, /^(?!.*#anchor-cases)[^@\n{}]+\{/m, "every case gallery rule must be scoped under #anchor-cases");
+assert.doesNotMatch(casesJs, /document\.body\.className/, "case gallery must not take over document.body from the workspace");
+assert.match(casesJs, /data-ui-language/, "case gallery language must follow the workspace toggle");
+assert.ok(html.indexOf('id="anchor-workspace"') < html.indexOf(casesMarker), "live workspace must stay above the archived gallery");
 
 const htmlIds = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(new Set(htmlIds).size, htmlIds.length, "workspace entry must not contain duplicate IDs");
@@ -95,7 +117,7 @@ assert.match(workspaceCss, /@media \(max-width: 768px\)/, "workspace must define
 assert.match(workspaceCss, /overflow-y:\s*auto/, "workspace panels must scroll internally");
 assert.match(workspaceCss, /\.aw-workspace-panel\s*\{[\s\S]*height:\s*var\(--aw-panel-height\)/, "workspace panels must use a fixed height");
 assert.match(workspaceCss, /\.aw-workspace-panel\s*\{[\s\S]*max-height:\s*var\(--aw-panel-height\)/, "workspace panels must not expand past the fixed height");
-assert.doesNotMatch(html, /--v7-panel-body-height|v7-col-body|setModel\(|setPage\(/, "workspace entry must not include legacy static demo behavior");
+assert.doesNotMatch(workspaceHtml, /--v7-panel-body-height|v7-col-body|setModel\(|setPage\(/, "workspace entry must not include legacy static demo behavior");
 assert.match(workspaceUiJs, /UI_LANGUAGE_STORAGE_KEY/, "workspace must persist the global UI language setting");
 assert.match(workspaceUiJs, /setUiLanguage/, "workspace must wire global UI language switching");
 assert.match(workspaceUiJs, /applyStaticTranslations/, "workspace must translate static UI text");
