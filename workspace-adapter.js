@@ -90,7 +90,7 @@
     };
   }
 
-  function normalizeClaims(claims) {
+  function normalizeClaims(claims, depth) {
     if (!Array.isArray(claims)) return [];
     return claims.map((claim, index) => ({
       id: valueOrDash(claim && claim.claim_id) === DASH ? `claim-${index + 1}` : String(claim.claim_id),
@@ -100,7 +100,25 @@
       evidenceIds: safeStringList(claim && claim.evidence_ids),
       supportingEvidenceIds: safeStringList(claim && claim.supporting_evidence_ids),
       conflictingEvidenceIds: safeStringList(claim && claim.conflicting_evidence_ids),
+      // Optional backend fields. Absent on an older API, and null when the backend
+      // could not establish them; either way they stay null here rather than being
+      // filled in locally.
+      reasonCode: optionalText(claim && claim.reason_code),
+      supportedPortion: optionalText(claim && claim.supported_portion),
+      unsupportedPortion: optionalText(claim && claim.unsupported_portion),
+      // One level only. Subclaims are clauses of a claim, not a tree, and a
+      // runaway nesting in a response must not become a runaway render.
+      subclaims: (depth || 0) >= 1 ? [] : normalizeClaims(claim && claim.subclaims, (depth || 0) + 1),
     }));
+  }
+
+  // Empty string, "-" and undefined all mean "the backend did not give us this".
+  // Kept distinct from a real value so the UI can say unavailable rather than
+  // printing a dash as though it were content.
+  function optionalText(value) {
+    if (value === null || value === undefined) return null;
+    const text = String(value).trim();
+    return text && text !== DASH ? text : null;
   }
 
 
@@ -113,18 +131,11 @@
     return NUMERIC_CLAIM_RE.test(String(claim || ""));
   }
 
-  function supportedPortion(status, original) {
-    // Only "supported" means the evidence reached the whole claim. For
-    // partially_supported the backend tells us some of it holds but not which part,
-    // so we must not nominate one.
-    return String(status || "").toLowerCase() === "supported" ? original : null;
-  }
-
-  function unsupportedPortion(status, original) {
-    const normalized = String(status || "").toLowerCase();
-    if (normalized === "unsupported" || normalized === "not_verifiable") return original;
-    return null;
-  }
+  // Portions used to be derived here from the status alone, which the backend brief
+  // forbids: which half of a compound claim the evidence reached is a medical
+  // judgement and the frontend is not entitled to make it. The backend now verifies
+  // claims clause by clause and returns the two spans, so they are read, not
+  // inferred. Null stays null and the UI says the result is unavailable.
 
   function normalizeCorrections(corrections, claims) {
     if (!Array.isArray(corrections)) return [];
@@ -133,25 +144,36 @@
     return corrections.map((correction, index) => {
       const original = valueOrDash(correction && correction.original_claim);
       const corrected = correction && correction.corrected_claim ? String(correction.corrected_claim) : "";
-      const claim = claimByText.get(normalizeComparableText(original)) || claimByOrdinal(correction, claims);
+      // claim_id is the backend's own join. Matching on text is the fallback for an
+      // older response that did not carry one.
+      const claimId = optionalText(correction && correction.claim_id);
+      const claim =
+        (claimId && claims.find((item) => item.id === claimId)) ||
+        claimByText.get(normalizeComparableText(original)) ||
+        claimByOrdinal(correction, claims);
       const status = valueOrDash(correction && correction.verification_status);
       const reason = valueOrDash(correction && correction.correction_reason);
       const category = normalizeCorrectionCategory(correction && correction.category, status, reason, original);
       const material = isMaterialCorrection(status, original, corrected);
       return {
         id: valueOrDash(correction && correction.correction_id) === DASH ? `correction-${index + 1}` : String(correction.correction_id),
-        claimId: claim ? claim.id : valueOrDash(correction && correction.claim_id),
+        claimId: claim ? claim.id : (claimId || DASH),
         category,
         severity: deriveSeverity(status, material),
         originalClaim: original,
         correctedClaim: corrected || null,
         verificationStatus: status,
-        // Which part of the claim the evidence actually reached. The backend does not
-        // return sub-clause verdicts, so anything it cannot tell us stays null and the
-        // UI says so rather than guessing which half of a compound claim survived.
-        supportedPortion: supportedPortion(status, original),
-        unsupportedPortion: unsupportedPortion(status, original),
-        subClauseVerified: false,
+        // Which part of the claim the evidence actually reached, as the backend's
+        // clause-level verification determined it. Null when it could not be
+        // established; never reconstructed here.
+        supportedPortion: optionalText(correction && correction.supported_portion),
+        unsupportedPortion: optionalText(correction && correction.unsupported_portion),
+        reasonCode: optionalText(correction && correction.reason_code),
+        subClauseVerified: Boolean(
+          optionalText(correction && correction.supported_portion) ||
+          optionalText(correction && correction.unsupported_portion)
+        ),
+        subclaims: claim ? claim.subclaims || [] : [],
         carriesNumerics: carriesNumerics(original),
         reason,
         supportingEvidenceIds: safeStringList(correction && correction.supporting_evidence_ids),

@@ -1918,3 +1918,51 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
   .aw-focus-pulse { animation: none !important; }
   * { scroll-behavior: auto !important; }
 }
+
+/* Clause-level verification results inside a correction card. Read-only rendering
+   of what the backend returned: one row per checked fact, its status and the
+   evidence ids behind it. Indented under the correction rows so it reads as
+   detail of that claim rather than a separate list of claims. */
+.aw-subclaims {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--aw-border, rgba(0, 0, 0, 0.08));
+}
+
+.aw-subclaims-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  margin-bottom: 0.35rem;
+}
+
+.aw-subclaim-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.aw-subclaim {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.aw-subclaim-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.aw-subclaim-evidence {
+  font-family: var(--aw-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.72rem;
+  opacity: 0.65;
+  word-break: break-all;
+}

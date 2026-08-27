@@ -376,6 +376,120 @@ assert.equal(auditJson.query_id, "query-123");
 assert.equal(auditJson.corrections.length, 2);
 assert.equal(workspaceExport.makeReportFilename(vm, "md", new Date("2026-08-25T00:00:03.000Z")).endsWith(".md"), true);
 
+// Upgrade 2 of the retrieval brief: the backend verifies claims clause by clause and
+// returns the two portions. The frontend renders them and must never reconstruct them.
+const clausePayload = {
+  query_id: "query-clause",
+  question: "Does nerandomilast slow FVC decline?",
+  raw_answer: { text: "Nerandomilast reduced FVC decline by 73.2 mL at Week 52.", provider: "p", model: "m" },
+  corrected_answer: { text: "Anchor evidence supports: Nerandomilast reduced FVC decline.", evidence_status: "partial" },
+  confidence: null,
+  claims: [
+    {
+      claim_id: "claim-1",
+      text: "Nerandomilast reduced FVC decline by 73.2 mL at Week 52.",
+      verification_status: "partially_supported",
+      supporting_evidence_ids: ["EV_1"],
+      conflicting_evidence_ids: [],
+      reason_code: "exact_value_not_verified",
+      supported_portion: "Nerandomilast reduced FVC decline",
+      unsupported_portion: "by 73.2 mL",
+      subclaims: [
+        {
+          claim_id: "claim-1.1",
+          text: "Nerandomilast reduced FVC decline",
+          verification_status: "supported",
+          supporting_evidence_ids: ["EV_1"],
+          conflicting_evidence_ids: [],
+          reason_code: "evidence_supports_claim",
+        },
+        {
+          claim_id: "claim-1.2",
+          text: "73.2 mL",
+          verification_status: "not_verifiable",
+          supporting_evidence_ids: [],
+          conflicting_evidence_ids: [],
+        },
+      ],
+    },
+  ],
+  corrections: [
+    {
+      correction_id: "correction-1",
+      claim_id: "claim-1",
+      original_claim: "Nerandomilast reduced FVC decline by 73.2 mL at Week 52.",
+      corrected_claim: "Anchor evidence supports: Nerandomilast reduced FVC decline.",
+      verification_status: "partially_supported",
+      supporting_evidence_ids: ["EV_1"],
+      conflicting_evidence_ids: [],
+      correction_reason: "Clause-level verification.",
+      citation_ids: ["citation-1"],
+      reason_code: "exact_value_not_verified",
+      supported_portion: "Nerandomilast reduced FVC decline",
+      unsupported_portion: "by 73.2 mL",
+    },
+  ],
+  citations: [{ citation_id: "citation-1", evidence_id: "EV_1", title: "Trial", pmid: "12345678" }],
+  audit: { raw_answer_preserved: true, correction_performed: true, evidence_status: "partial", notes: [] },
+};
+
+const clauseVm = workspaceAdapter.normalizeResponse(clausePayload);
+const clauseCorrection = clauseVm.corrections[0];
+assert.equal(clauseCorrection.supportedPortion, "Nerandomilast reduced FVC decline");
+assert.equal(clauseCorrection.unsupportedPortion, "by 73.2 mL");
+assert.equal(clauseCorrection.reasonCode, "exact_value_not_verified");
+assert.equal(clauseCorrection.subClauseVerified, true);
+assert.equal(clauseCorrection.claimId, "claim-1", "correction must join to the claim by claim_id");
+assert.equal(clauseVm.claims[0].subclaims.length, 2);
+assert.equal(clauseVm.claims[0].subclaims[0].verificationStatus, "supported");
+assert.equal(clauseCorrection.subclaims.length, 2, "corrections carry the clause results for rendering");
+
+// A response with no clause-level result must leave the portions null. The old
+// adapter filled them in from the status alone, which is the frontend deciding a
+// medical question it is not entitled to decide.
+const noClausePayload = JSON.parse(JSON.stringify(clausePayload));
+delete noClausePayload.corrections[0].supported_portion;
+delete noClausePayload.corrections[0].unsupported_portion;
+delete noClausePayload.claims[0].subclaims;
+const noClauseVm = workspaceAdapter.normalizeResponse(noClausePayload);
+assert.equal(noClauseVm.corrections[0].supportedPortion, null);
+assert.equal(noClauseVm.corrections[0].unsupportedPortion, null);
+assert.equal(noClauseVm.corrections[0].subClauseVerified, false);
+assert.deepEqual(noClauseVm.claims[0].subclaims, []);
+
+// A supported claim with no portions returned must not have one invented either.
+const supportedPayload = JSON.parse(JSON.stringify(noClausePayload));
+supportedPayload.corrections[0].verification_status = "supported";
+supportedPayload.claims[0].verification_status = "supported";
+const supportedVm = workspaceAdapter.normalizeResponse(supportedPayload);
+assert.equal(supportedVm.corrections[0].supportedPortion, null,
+  "the frontend must not nominate a supported portion the backend did not return");
+
+// Backward compatibility: a response written against the previous schema, with none
+// of the optional fields, still renders.
+const legacyPayload = JSON.parse(JSON.stringify(clausePayload));
+delete legacyPayload.claims[0].reason_code;
+delete legacyPayload.claims[0].supported_portion;
+delete legacyPayload.claims[0].unsupported_portion;
+delete legacyPayload.claims[0].subclaims;
+legacyPayload.corrections[0] = {
+  correction_id: "correction-1",
+  original_claim: "Nerandomilast reduced FVC decline by 73.2 mL at Week 52.",
+  verification_status: "partially_supported",
+  correction_reason: "Older API shape.",
+};
+const legacyVm = workspaceAdapter.normalizeResponse(legacyPayload);
+assert.equal(legacyVm.corrections[0].supportedPortion, null);
+assert.equal(legacyVm.corrections[0].reasonCode, null);
+assert.equal(legacyVm.corrections[0].claimId, "claim-1", "text match still joins an older response");
+
+// The adapter source must not contain a local portion derivation any more.
+const adapterSource = workspaceAdapterJs;
+assert.equal(/function supportedPortion\s*\(/.test(adapterSource), false,
+  "portions must be read from the backend, never derived in the frontend");
+assert.equal(/function unsupportedPortion\s*\(/.test(adapterSource), false,
+  "portions must be read from the backend, never derived in the frontend");
+
 console.log("frontend static checks passed");
 
 function pickError(errorInfo) {

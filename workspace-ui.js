@@ -240,6 +240,7 @@
       materialCorrectionFallback: "No material correction was required.",
       stageRaw: "Raw answer",
       stageRetrieval: "Evidence search",
+      stageClaimRetrieval: "Per-claim evidence search",
       stageExtraction: "Claim extraction",
       stageVerification: "Claim check",
       stageCorrection: "Correction",
@@ -271,6 +272,17 @@
       correctionUnsupportedPortion: "Unsupported portion",
       correctionCorrectedWording: "Corrected wording",
       correctionNoSubClause: "The backend did not return sub-clause verification for this claim.",
+      correctionSubclauses: "Clause-level verification",
+      correctionReasonCode: "Reason code",
+      reasonCode_evidence_supports_claim: "Evidence supports the claim",
+      reasonCode_mixed_clause_support: "Some clauses are supported, others are not",
+      reasonCode_exact_value_not_verified: "The exact figures were not verified",
+      reasonCode_insufficient_topic_coverage: "Retrieved evidence does not cover this topic",
+      reasonCode_query_not_understood: "The query could not be mapped to the knowledge base",
+      reasonCode_no_relevant_evidence: "Relevant evidence was found and does not support this",
+      reasonCode_evidence_contradicts_claim: "Evidence contradicts the claim",
+      reasonCode_evidence_sources_conflict: "Sources disagree with each other",
+      reasonCode_retrieval_unavailable: "Retrieval was unavailable for this claim",
       correctionNothingVerified: "No part of this claim could be verified from the available Anchor evidence.",
       correctionConflictingResult: "Anchor evidence conflicts with this claim; see Reason and the conflicting evidence below.",
       correctionNumbersNotVerified: "The exact numerical values could not be verified from the available Anchor evidence.",
@@ -506,6 +518,7 @@
       materialCorrectionFallback: "无需实质性校正。",
       stageRaw: "原始回答",
       stageRetrieval: "证据检索",
+      stageClaimRetrieval: "Claim 级证据检索",
       stageExtraction: "Claim 抽取",
       stageVerification: "Claim 核验",
       stageCorrection: "校正",
@@ -537,6 +550,17 @@
       correctionUnsupportedPortion: "不被支持的部分",
       correctionCorrectedWording: "校正后表述",
       correctionNoSubClause: "后端未提供该 claim 的子句级验证结果。",
+      correctionSubclauses: "子句级核验",
+      correctionReasonCode: "原因代码",
+      reasonCode_evidence_supports_claim: "证据支持该表述",
+      reasonCode_mixed_clause_support: "部分子句获得支持，其余未获支持",
+      reasonCode_exact_value_not_verified: "具体数值未获核实",
+      reasonCode_insufficient_topic_coverage: "检索到的证据未覆盖该主题",
+      reasonCode_query_not_understood: "无法将该问题映射到知识库词表",
+      reasonCode_no_relevant_evidence: "已检索到相关证据，但不支持该表述",
+      reasonCode_evidence_contradicts_claim: "证据与该表述相矛盾",
+      reasonCode_evidence_sources_conflict: "不同来源之间存在冲突",
+      reasonCode_retrieval_unavailable: "该 claim 的检索不可用",
       correctionNothingVerified: "该表述没有任何部分能被 Anchor 现有证据核验。",
       correctionConflictingResult: "Anchor 证据与该表述冲突；详见下方原因与冲突证据。",
       correctionNumbersNotVerified: "Anchor 现有证据无法核验其中的具体数值。",
@@ -1319,6 +1343,11 @@
         push(t("correctionSupportedPortion"), t("correctionNoSubClause"), "aw-row-note");
       }
       push(t("correctionWhy"), correction.reason);
+      // The machine-readable code behind the status, shown alongside the prose so the
+      // reader can see the two agree.
+      if (correction.reasonCode) {
+        push(t("correctionReasonCode"), reasonCodeLabel(correction.reasonCode), "aw-row-note");
+      }
       push(t("correctionEvidence"), correction.supportingEvidenceIds.join(", "));
       if (correction.citationIds.length) {
         push(t("correctionCitations"), correction.citationIds.join(", "));
@@ -1328,6 +1357,53 @@
       push(t("correctionCorrectedWording"), correction.correctedClaim);
       push(t("correctionStatus"), verificationStatusLabel(correction.verificationStatus));
       details.append(...rows);
+      // Clause-level results, when the backend verified the claim clause by clause.
+      // Shown after the rows so a reader who wants to know why a portion was called
+      // supported can see which fact was checked and against which evidence.
+      if (correction.subclaims && correction.subclaims.length) {
+        details.appendChild(subclaimList(correction.subclaims));
+      }
+    }
+
+    /* Each subclaim is a fact the backend checked on its own, with its own status and
+       its own evidence ids. Rendered read-only: the frontend does not re-derive a
+       status, combine them, or infer anything the backend did not return. */
+    function subclaimList(subclaims) {
+      const wrapper = create("div", { className: "aw-subclaims" });
+      wrapper.appendChild(
+        create("div", { className: "aw-subclaims-title", text: t("correctionSubclauses") })
+      );
+      const list = create("ul", { className: "aw-subclaim-list" });
+      subclaims.forEach((subclaim) => {
+        const item = create("li", { className: "aw-subclaim" });
+        item.appendChild(
+          create("span", {
+            className: `aw-status-chip aw-status-${safeClass(subclaim.verificationStatus)}`,
+            text: verificationStatusLabel(subclaim.verificationStatus),
+          })
+        );
+        item.appendChild(create("span", { className: "aw-subclaim-text", text: subclaim.text }));
+        const evidenceIds = subclaim.supportingEvidenceIds.concat(subclaim.conflictingEvidenceIds);
+        if (evidenceIds.length) {
+          item.appendChild(
+            create("span", {
+              className: "aw-subclaim-evidence",
+              text: evidenceIds.join(", "),
+            })
+          );
+        }
+        list.appendChild(item);
+      });
+      wrapper.appendChild(list);
+      return wrapper;
+    }
+
+    /* Reason codes come from one backend definition. Unknown codes are shown as-is
+       rather than dropped: a code the UI has no wording for is still information. */
+    function reasonCodeLabel(code) {
+      const key = `reasonCode_${String(code)}`;
+      const label = t(key);
+      return label === key ? String(code) : label;
     }
 
     /* What the evidence actually established, stated from the status. Never the claim
@@ -2173,6 +2249,7 @@
     const key = phase && phase.key;
     if (key === "raw_generation") return t("stageRaw");
     if (key === "retrieval") return t("stageRetrieval");
+    if (key === "claim_retrieval") return t("stageClaimRetrieval");
     if (key === "claim_extraction") return t("stageExtraction");
     if (key === "verification") return t("stageVerification");
     if (key === "correction") return t("stageCorrection");
