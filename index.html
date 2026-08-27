@@ -263,13 +263,13 @@
             <span class="aw-letter">B</span>
             <div>
               <h2 id="aw-corrected-title" data-i18n="correctedTitle">Anchor-corrected answer</h2>
-              <p><span data-i18n="kbGrounded">KB-grounded</span> / <span id="aw-corrected-evidence">-</span> / <span data-i18n="confidenceLower">confidence</span> <span id="aw-corrected-confidence">-</span></p>
+              <p><span data-i18n="kbGrounded">KB-grounded</span> / <span id="aw-corrected-evidence">-</span><span id="aw-confidence-wrap" hidden> / <span data-i18n="confidenceLower">confidence</span> <span id="aw-corrected-confidence">-</span></span></p>
             </div>
           </div>
           <div class="aw-panel-actions">
             <div class="aw-mode-toggle" role="group" aria-label="Corrected answer display mode" data-i18n-aria-label="correctedModeAria">
-              <button class="aw-mode-button active" type="button" data-mode="clean" aria-pressed="true" data-i18n="clean">Clean</button>
-              <button class="aw-mode-button" type="button" data-mode="tracked" aria-pressed="false" data-i18n="tracked">Tracked</button>
+              <button class="aw-mode-button active" type="button" data-mode="clean" aria-pressed="true" data-i18n="clean">Clean answer</button>
+              <button class="aw-mode-button" type="button" data-mode="tracked" aria-pressed="false" data-i18n="tracked">Show changes</button>
             </div>
             <button id="aw-copy-corrected" class="aw-ghost-button" type="button" disabled data-i18n="copyCorrectedAnswer">Copy corrected answer</button>
           </div>
@@ -308,6 +308,11 @@
             <div class="aw-audit-buttons">
               <button id="aw-expand-corrections" class="aw-ghost-button" type="button" data-i18n="expandAll">Expand all</button>
               <button id="aw-collapse-corrections" class="aw-ghost-button" type="button" data-i18n="collapseAll">Collapse all</button>
+            </div>
+            <div class="aw-claim-nav" role="group" aria-label="Claim navigation" data-i18n-aria-label="claimNavAria">
+              <button id="aw-prev-claim" class="aw-ghost-button" type="button" disabled data-i18n="previousClaim">Previous claim</button>
+              <span id="aw-claim-position" class="aw-claim-position" aria-live="polite">-</span>
+              <button id="aw-next-claim" class="aw-ghost-button" type="button" disabled data-i18n="nextClaim">Next claim</button>
             </div>
             <div id="aw-corrections-summary" class="aw-corrections-summary"></div>
             <div id="aw-corrections-list" class="aw-corrections-list"></div>

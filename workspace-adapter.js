@@ -103,6 +103,29 @@
     }));
   }
 
+
+  // A claim that quotes effect sizes, confidence intervals or p-values. Used only to
+  // choose wording - "the numbers were not verified" is a restatement of the status,
+  // never a new medical judgement.
+  const NUMERIC_CLAIM_RE = /\d+(?:\.\d+)?\s*(?:%|mL|ml|mg|kg|年|weeks?|months?)|p\s*[<>=]|95%\s*CI|CI\s*[:：]/i;
+
+  function carriesNumerics(claim) {
+    return NUMERIC_CLAIM_RE.test(String(claim || ""));
+  }
+
+  function supportedPortion(status, original) {
+    // Only "supported" means the evidence reached the whole claim. For
+    // partially_supported the backend tells us some of it holds but not which part,
+    // so we must not nominate one.
+    return String(status || "").toLowerCase() === "supported" ? original : null;
+  }
+
+  function unsupportedPortion(status, original) {
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "unsupported" || normalized === "not_verifiable") return original;
+    return null;
+  }
+
   function normalizeCorrections(corrections, claims) {
     if (!Array.isArray(corrections)) return [];
     const claimByText = new Map();
@@ -123,6 +146,13 @@
         originalClaim: original,
         correctedClaim: corrected || null,
         verificationStatus: status,
+        // Which part of the claim the evidence actually reached. The backend does not
+        // return sub-clause verdicts, so anything it cannot tell us stays null and the
+        // UI says so rather than guessing which half of a compound claim survived.
+        supportedPortion: supportedPortion(status, original),
+        unsupportedPortion: unsupportedPortion(status, original),
+        subClauseVerified: false,
+        carriesNumerics: carriesNumerics(original),
         reason,
         supportingEvidenceIds: safeStringList(correction && correction.supporting_evidence_ids),
         conflictingEvidenceIds: safeStringList(correction && correction.conflicting_evidence_ids),
