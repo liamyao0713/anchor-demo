@@ -53,7 +53,7 @@
       settings: "Settings",
       export: "Export",
       exportMarkdown: "Export Markdown report",
-      exportJson: "Export audit JSON",
+      exportJson: "Download audit JSON",
       copyKeyCorrections: "Copy key corrections",
       copyQueryId: "Copy query ID",
       copyRunDetails: "Copy run details",
@@ -168,6 +168,10 @@
       markerConflicting: "conflicting",
       markerNotVerifiable: "not verifiable",
       markerOther: "changed",
+      openInCitations: "Open in Citations",
+      claimsTotal: "{count} claims",
+      clearFilter: "Clear filter",
+      noSupportingCitation: "No supporting citation was found for this claim.",
       previousClaim: "Previous claim",
       nextClaim: "Next claim",
       claimPosition: "Claim {index} of {total}",
@@ -314,7 +318,7 @@
       settings: "设置",
       export: "导出",
       exportMarkdown: "导出 Markdown 报告",
-      exportJson: "导出审计 JSON",
+      exportJson: "下载审计 JSON",
       copyKeyCorrections: "复制关键校正",
       copyQueryId: "复制 Query ID",
       copyRunDetails: "复制运行详情",
@@ -429,6 +433,10 @@
       markerConflicting: "证据冲突",
       markerNotVerifiable: "无法核验",
       markerOther: "已修改",
+      openInCitations: "在 Citations 中打开",
+      claimsTotal: "共 {count} 条 claim",
+      clearFilter: "清除筛选",
+      noSupportingCitation: "该 claim 没有找到支持它的 citation。",
       previousClaim: "上一条 claim",
       nextClaim: "下一条 claim",
       claimPosition: "第 {index} 条 / 共 {total} 条",
@@ -1202,11 +1210,8 @@
         return;
       }
 
-      refs.correctionsSummary.append(
-        smallStat(t("statSupported"), vm.metrics.supportedClaims),
-        smallStat(t("statCorrected"), vm.metrics.correctedClaims),
-        smallStat(t("statUnsupported"), vm.metrics.unsupportedClaims),
-      );
+      // Section 5: every count comes from the current claims, and each chip is a filter.
+      renderClaimSummaryBar(vm);
 
       const corrections = filteredCorrections(vm.corrections)
         .slice()
@@ -1231,13 +1236,12 @@
         );
         details.appendChild(summary);
         appendCorrectionFields(details, correction);
-        // Opening or clicking a card is a selection, not just a highlight: it has to
-        // drive the same selectedClaimId that A and B read.
-        details.addEventListener("toggle", () => {
-          if (details.open) selectClaimFromAudit(correction.claimId, correction.id);
-        });
-        details.addEventListener("click", (event) => {
-          if (event.target.tagName !== "SUMMARY") selectClaimFromAudit(correction.claimId, correction.id);
+        // Selection is driven by a real click, never by the toggle event: cards that
+        // render already open queue a toggle asynchronously, so keying off it made the
+        // last auto-opened card select itself on every render, which then dragged B's
+        // scroll position with it.
+        details.addEventListener("click", () => {
+          selectClaimFromAudit(correction.claimId, correction.id);
         });
         refs.correctionsList.appendChild(details);
       });
@@ -1251,6 +1255,52 @@
 
        Rows are now named for what they hold, empty ones are dropped instead of stacking
        dashes, and the verification result is derived from the status rather than echoed. */
+    /* "15 claims · 7 supported · 3 partially supported · 3 unsupported · 2 not
+       verifiable", counted from the run rather than hardcoded, with each status acting
+       as a filter and a visible way back to all claims. */
+    function renderClaimSummaryBar(vm) {
+      const counts = { supported: 0, partially_supported: 0, unsupported: 0, conflicting: 0, not_verifiable: 0 };
+      vm.claims.forEach((claim) => {
+        const key = String(claim.verificationStatus || "").toLowerCase();
+        if (key in counts) counts[key] += 1;
+      });
+
+      const total = create("span", { className: "aw-summary-total", text: t("claimsTotal", { count: vm.claims.length }) });
+      refs.correctionsSummary.appendChild(total);
+
+      const chip = (statusKey, count) => {
+        const active = correctionStatus === statusKey;
+        const button = create("button", {
+          className: `aw-status-chip aw-status-${safeClass(statusKey)}${active ? " active" : ""}`,
+          type: "button",
+        });
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+        button.append(
+          create("span", { className: "aw-chip-count", text: String(count) }),
+          create("span", { className: "aw-chip-label", text: verificationStatusLabel(statusKey) }),
+        );
+        button.addEventListener("click", () => {
+          correctionStatus = active ? "all" : statusKey;
+          renderAuditTabs();
+        });
+        return button;
+      };
+
+      Object.keys(counts).forEach((key) => {
+        if (!counts[key]) return;
+        refs.correctionsSummary.appendChild(chip(key, counts[key]));
+      });
+
+      if (correctionStatus !== "all") {
+        const clear = create("button", { className: "aw-chip-clear", type: "button", text: t("clearFilter") });
+        clear.addEventListener("click", () => {
+          correctionStatus = "all";
+          renderAuditTabs();
+        });
+        refs.correctionsSummary.appendChild(clear);
+      }
+    }
+
     function appendCorrectionFields(details, correction) {
       const status = String(correction.verificationStatus || "").toLowerCase();
       const rows = [];
@@ -1268,7 +1318,11 @@
       }
       push(t("correctionWhy"), correction.reason);
       push(t("correctionEvidence"), correction.supportingEvidenceIds.join(", "));
-      push(t("correctionCitations"), correction.citationIds.join(", "));
+      if (correction.citationIds.length) {
+        push(t("correctionCitations"), correction.citationIds.join(", "));
+      } else {
+        push(t("correctionCitations"), t("noSupportingCitation"), "aw-row-note");
+      }
       push(t("correctionCorrectedWording"), correction.correctedClaim);
       push(t("correctionStatus"), verificationStatusLabel(correction.verificationStatus));
       details.append(...rows);
@@ -1846,10 +1900,11 @@
         const button = create("button", {
           className: "aw-citation-marker",
           type: "button",
-          text: next.text,
+          text: next.ordinal ? `[${next.ordinal}]` : next.text,
           dataCitationId: next.citationId,
-          title: `Open ${next.citationId} in citations`,
+          title: `${next.citationId} - ${t("openInCitations")}`,
         });
+        button.setAttribute("aria-label", `${t("openInCitations")}: ${next.citationId}`);
         button.addEventListener("click", () => options.onCitation(next.citationId));
         parent.appendChild(button);
       }
@@ -1866,7 +1921,9 @@
       const trailingNumber = citationId.match(/(\d+)$/);
       if (trailingNumber) candidates.add(`[${trailingNumber[1]}]`);
       candidates.add(`[${index + 1}]`);
-      candidates.forEach((label) => labels.push({ label, citationId }));
+      // The ordinal is what the reader sees. The backend writes [citation-1] inline,
+      // which is long and noisy; the marker keeps pointing at the same real citation.
+      candidates.forEach((label) => labels.push({ label, citationId, ordinal: index + 1 }));
     });
     return labels.sort((a, b) => b.label.length - a.label.length);
   }
@@ -1886,7 +1943,7 @@
       const index = source.indexOf(candidate.label, cursor);
       if (index === -1) return;
       if (!best || index < best.index || (index === best.index && candidate.label.length > best.text.length)) {
-        best = { type: "citation", index, text: candidate.label, citationId: candidate.citationId };
+        best = { type: "citation", index, text: candidate.label, citationId: candidate.citationId, ordinal: candidate.ordinal };
       }
     });
     return best;

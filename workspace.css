@@ -1757,3 +1757,164 @@ body.anchor-workspace-mode > .wrap:not(.aw-shell) {
     transition-duration: .001ms !important;
   }
 }
+
+/* ---- UI audit, section 6 ----------------------------------------------------
+   Reading fixes for the corrected answer, the claim cards and the audit rows. */
+
+/* 6.1 The corrected answer's lists carried default discs that hang outside the card's
+   padding, and empty-state blocks centred their text. Long prose is read left-aligned. */
+.aw-md-list {
+  margin: 0 0 12px;
+  padding-left: 0;
+  list-style: none;
+}
+.aw-md-list li {
+  position: relative;
+  margin: 6px 0;
+  padding-left: 18px;
+  text-align: left;
+  line-height: 1.62;
+}
+.aw-md-list li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: .62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--aw-faint);
+}
+.aw-panel-body .aw-empty-block,
+.aw-audit-content .aw-empty-block {
+  text-align: left;
+}
+
+/* 6.2 A selected claim has to be visible as such, not just briefly highlighted. */
+.aw-is-selected {
+  outline: 2px solid var(--aw-blue);
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+.aw-flagged-claim.aw-is-selected,
+.aw-correction-card.aw-is-selected {
+  background: var(--aw-blue-soft);
+}
+
+/* A marked span reads by glyph and word, not by colour alone. */
+.aw-marker-glyph {
+  margin-right: 3px;
+  font-weight: 700;
+}
+.aw-marker-tag {
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(23, 32, 51, .08);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  vertical-align: 1px;
+}
+
+/* Compact inline citations. */
+.aw-citation-marker {
+  padding: 0 4px;
+  font-size: .85em;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+
+/* 6.4 Field labels were too faint to scan against the values they introduce. */
+.aw-correction-row > span {
+  color: #4a5568;
+  font-weight: 700;
+}
+.aw-correction-row > p {
+  margin: 2px 0 0;
+  text-align: left;
+  line-height: 1.6;
+}
+.aw-correction-row.aw-row-note > p {
+  color: var(--aw-muted);
+  font-style: italic;
+}
+.aw-correction-row.aw-row-unsupported > p {
+  padding: 6px 9px;
+  border-left: 3px solid var(--aw-a);
+  border-radius: 5px;
+  background: var(--aw-a-soft);
+}
+.aw-correction-row.aw-row-result > p {
+  font-weight: 600;
+}
+
+/* 5. Status chips double as filters, so they need a pressed state. */
+.aw-corrections-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.aw-summary-total {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--aw-text);
+}
+.aw-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--aw-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--aw-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.aw-status-chip .aw-chip-count { font-weight: 800; }
+.aw-status-chip.active {
+  border-color: var(--aw-blue);
+  background: var(--aw-blue-soft);
+  color: #2448b5;
+}
+.aw-chip-clear {
+  border: 0;
+  background: none;
+  color: var(--aw-blue);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* 3.6 Claim navigation. */
+.aw-claim-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+.aw-claim-position {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--aw-muted);
+}
+
+/* 7. Focus must be visible for every control, and motion is opt-out. */
+.aw-status-chip:focus-visible,
+.aw-chip-clear:focus-visible,
+.aw-claim-marker:focus-visible,
+.aw-citation-marker:focus-visible {
+  outline: 2px solid var(--aw-blue);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aw-focus-pulse { animation: none !important; }
+  * { scroll-behavior: auto !important; }
+}
