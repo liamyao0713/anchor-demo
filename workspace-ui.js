@@ -272,6 +272,7 @@
       correctionCorrectedWording: "Corrected wording",
       correctionNoSubClause: "The backend did not return sub-clause verification for this claim.",
       correctionNothingVerified: "No part of this claim could be verified from the available Anchor evidence.",
+      correctionConflictingResult: "Anchor evidence conflicts with this claim; see Reason and the conflicting evidence below.",
       correctionNumbersNotVerified: "The exact numerical values could not be verified from the available Anchor evidence.",
       correctionPartialNumbers: "The available evidence supports the qualitative conclusion, but does not verify the exact effect sizes or p-value stated by the model.",
       correctionPartialGeneric: "The available evidence supports part of this claim. Anchor did not receive a sub-clause breakdown, so the supported part is not nominated here.",
@@ -537,6 +538,7 @@
       correctionCorrectedWording: "校正后表述",
       correctionNoSubClause: "后端未提供该 claim 的子句级验证结果。",
       correctionNothingVerified: "该表述没有任何部分能被 Anchor 现有证据核验。",
+      correctionConflictingResult: "Anchor 证据与该表述冲突；详见下方原因与冲突证据。",
       correctionNumbersNotVerified: "Anchor 现有证据无法核验其中的具体数值。",
       correctionPartialNumbers: "现有证据支持其定性结论，但不能核验模型给出的具体效应量或 P 值。",
       correctionPartialGeneric: "现有证据支持该表述的一部分。后端未返回子句级拆分，因此此处不指认具体是哪一部分。",
@@ -1335,7 +1337,10 @@
       if (status === "partially_supported") {
         return correction.carriesNumerics ? t("correctionPartialNumbers") : t("correctionPartialGeneric");
       }
-      if (status === "conflicting") return correction.reason || t("correctionNothingVerified");
+      // The backend's reason often quotes the very figures it is denying. That belongs in
+      // the Reason row; the result row must stay a statement about verification, so no
+      // unverified number can be read off a line labelled as a result.
+      if (status === "conflicting") return t("correctionConflictingResult");
       return correction.carriesNumerics ? t("correctionNumbersNotVerified") : t("correctionNothingVerified");
     }
 
