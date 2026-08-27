@@ -88,6 +88,23 @@ assert.match(workspaceUiJs, /FLAGGED_STATUSES = new Set\(\["unsupported", "confl
 assert.doesNotMatch(workspaceUiJs, /filter\(\(claim\) => claim\.verificationStatus !== "supported"\)/, "panel A must not flag every non-supported claim");
 assert.match(workspaceUiJs, /\.filter\(isFlaggedClaim\)/, "raw markers must go through the shared flag predicate");
 
+// The Markdown export must say the same thing as the audit panel (section 10.9), and
+// neither may print the claim text under a heading that reads like a verification.
+const SHARED_VERDICT_SENTENCES = [
+  "No part of this claim could be verified from the available Anchor evidence.",
+  "The exact numerical values could not be verified from the available Anchor evidence.",
+  "The available evidence supports the qualitative conclusion, but does not verify the exact effect sizes or p-value stated by the model.",
+  "Anchor evidence conflicts with this claim; see Reason and the conflicting evidence below.",
+  "The backend did not return sub-clause verification for this claim.",
+  "No supporting citation was found for this claim.",
+];
+for (const sentence of SHARED_VERDICT_SENTENCES) {
+  assert.ok(workspaceUiJs.includes(sentence), `audit panel must carry: ${sentence}`);
+  assert.ok(workspaceExportJs.includes(sentence), `markdown export must carry: ${sentence}`);
+}
+assert.doesNotMatch(workspaceExportJs, /Verified: \$\{plain\(correction\.correctedClaim \|\| correction\.originalClaim\)\}/, "export must not echo the claim under a Verified heading");
+assert.doesNotMatch(workspaceUiJs, /correctionRow\(t\("correctionVerified"\), correction\.correctedClaim \|\| correction\.originalClaim/, "panel must not echo the claim under the verification result");
+
 const htmlIds = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(new Set(htmlIds).size, htmlIds.length, "workspace entry must not contain duplicate IDs");
 

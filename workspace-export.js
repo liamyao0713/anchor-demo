@@ -60,11 +60,25 @@
         lines.push(`### ${plain(correction.id)} | ${plain(correction.category)} | ${plain(correction.severity)}`);
         lines.push(`Claim ID: ${plain(correction.claimId)}`);
         lines.push(`Status: ${plain(correction.verificationStatus)}`);
-        lines.push(`Model said: ${plain(correction.originalClaim)}`);
-        lines.push(`Verified: ${plain(correction.correctedClaim || correction.originalClaim)}`);
-        lines.push(`Why: ${plain(correction.reason)}`);
+        // Mirrors the audit panel exactly, per section 10.9. The old line printed
+        // corrected_claim - or, when that was empty, the claim itself - under the word
+        // "Verified", which reprinted every unverified figure as though it had been
+        // confirmed.
+        lines.push(`Original claim: ${plain(correction.originalClaim)}`);
+        lines.push(`Verification result: ${plain(verificationResultLine(correction))}`);
+        if (correction.supportedPortion) {
+          lines.push(`Supported portion: ${plain(correction.supportedPortion)}`);
+        }
+        if (correction.unsupportedPortion) {
+          lines.push(`Unsupported portion: ${plain(correction.unsupportedPortion)}`);
+        }
+        if (String(correction.verificationStatus).toLowerCase() === "partially_supported" && !correction.subClauseVerified) {
+          lines.push(`Supported portion: ${NO_SUB_CLAUSE}`);
+        }
+        lines.push(`Reason: ${plain(correction.reason)}`);
         lines.push(`Supporting evidence: ${plainList(correction.supportingEvidenceIds)}`);
-        lines.push(`Citations: ${plainList(correction.citationIds)}`);
+        lines.push(`Citation links: ${correction.citationIds && correction.citationIds.length ? plainList(correction.citationIds) : NO_CITATION}`);
+        lines.push(`Corrected wording: ${plain(correction.correctedClaim)}`);
         lines.push("");
       });
     }
@@ -105,6 +119,24 @@
     }
 
     return `${lines.join("\n").trim()}\n`;
+  }
+
+  /* Kept identical to verificationResultText() in workspace-ui.js; a static check pins
+     the sentences so the export and the screen cannot drift apart. */
+  const NOTHING_VERIFIED = "No part of this claim could be verified from the available Anchor evidence.";
+  const NUMBERS_NOT_VERIFIED = "The exact numerical values could not be verified from the available Anchor evidence.";
+  const PARTIAL_NUMBERS = "The available evidence supports the qualitative conclusion, but does not verify the exact effect sizes or p-value stated by the model.";
+  const PARTIAL_GENERIC = "The available evidence supports part of this claim. Anchor did not receive a sub-clause breakdown, so the supported part is not nominated here.";
+  const CONFLICTING_RESULT = "Anchor evidence conflicts with this claim; see Reason and the conflicting evidence below.";
+  const NO_SUB_CLAUSE = "The backend did not return sub-clause verification for this claim.";
+  const NO_CITATION = "No supporting citation was found for this claim.";
+
+  function verificationResultLine(correction) {
+    const status = String(correction.verificationStatus || "").toLowerCase();
+    if (status === "supported") return correction.originalClaim;
+    if (status === "partially_supported") return correction.carriesNumerics ? PARTIAL_NUMBERS : PARTIAL_GENERIC;
+    if (status === "conflicting") return CONFLICTING_RESULT;
+    return correction.carriesNumerics ? NUMBERS_NOT_VERIFIED : NOTHING_VERIFIED;
   }
 
   function buildAuditJson(viewModel) {
